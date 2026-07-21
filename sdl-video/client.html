@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>SDL WebSocket Viewer</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        canvas {
+            border: 1px solid #333;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const width = 640;
+        const height = 480;
+        
+        canvas.width = width;
+        canvas.height = height;
+        
+        const ws = new WebSocket('ws://' + window.location.host);
+        
+        ws.binaryType = 'arraybuffer';
+        
+        ws.onopen = function() {
+            console.log('Connected to server');
+        };
+        
+        ws.onmessage = function(event) {
+            if (event.data instanceof ArrayBuffer) {
+                const buffer = new Uint8Array(event.data);
+                const imageData = ctx.createImageData(width, height);
+                
+                for (let i = 0; i < buffer.length; i += 4) {
+                    imageData.data[i] = buffer[i + 2];
+                    imageData.data[i + 1] = buffer[i + 1];
+                    imageData.data[i + 2] = buffer[i];
+                    imageData.data[i + 3] = buffer[i + 3];
+                }
+                
+                ctx.putImageData(imageData, 0, 0);
+            }
+        };
+        
+        ws.onclose = function() {
+            console.log('Disconnected from server');
+        };
+        
+        function sendEvent(event) {
+            if (ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify(event));
+            }
+        }
+        
+        canvas.addEventListener('mousemove', function(e) {
+            const rect = canvas.getBoundingClientRect();
+            sendEvent({
+                type: 'mousemove',
+                x: e.clientX - rect.left,
+                y: e.clientY - rect.top
+            });
+        });
+        
+        canvas.addEventListener('mousedown', function(e) {
+            const rect = canvas.getBoundingClientRect();
+            sendEvent({
+                type: 'mousedown',
+                x: e.clientX - rect.left,
+                y: e.clientY - rect.top,
+                button: e.button
+            });
+        });
+        
+        canvas.addEventListener('mouseup', function(e) {
+            const rect = canvas.getBoundingClientRect();
+            sendEvent({
+                type: 'mouseup',
+                x: e.clientX - rect.left,
+                y: e.clientY - rect.top,
+                button: e.button
+            });
+        });
+        
+        document.addEventListener('keydown', function(e) {
+            sendEvent({
+                type: 'keydown',
+                keycode: e.keyCode
+            });
+        });
+        
+        document.addEventListener('keyup', function(e) {
+            sendEvent({
+                type: 'keyup',
+                keycode: e.keyCode
+            });
+        });
+    </script>
+</body>
+</html>

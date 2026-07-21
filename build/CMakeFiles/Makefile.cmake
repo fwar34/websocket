@@ -12,6 +12,8 @@ set(CMAKE_MAKEFILE_DEPENDS
   "CMakeFiles/4.1.0/CMakeCXXCompiler.cmake"
   "CMakeFiles/4.1.0/CMakeRCCompiler.cmake"
   "CMakeFiles/4.1.0/CMakeSystem.cmake"
+  "H:/websocket/sdl-rect/CMakeLists.txt"
+  "H:/websocket/sdl-video/CMakeLists.txt"
   "I:/msys64/ucrt64/lib/cmake/SDL2/SDL2Config.cmake"
   "I:/msys64/ucrt64/lib/cmake/SDL2/SDL2ConfigVersion.cmake"
   "I:/msys64/ucrt64/lib/cmake/SDL2/SDL2Targets-release.cmake"
@@ -67,9 +69,12 @@ set(CMAKE_MAKEFILE_OUTPUTS
 # Byproducts of CMake generate step:
 set(CMAKE_MAKEFILE_PRODUCTS
   "CMakeFiles/CMakeDirectoryInformation.cmake"
+  "sdl-rect/CMakeFiles/CMakeDirectoryInformation.cmake"
+  "sdl-video/CMakeFiles/CMakeDirectoryInformation.cmake"
   )
 
 # Dependency information for all targets:
 set(CMAKE_DEPEND_INFO_FILES
-  "CMakeFiles/sdl_websocket_renderer.dir/DependInfo.cmake"
+  "sdl-rect/CMakeFiles/sdl_rect.dir/DependInfo.cmake"
+  "sdl-video/CMakeFiles/sdl_video.dir/DependInfo.cmake"
   )

@@ -1,3 +1,0 @@
-I:\msys64\ucrt64\bin\cmake.exe -E rm -f CMakeFiles\sdl_websocket_renderer.dir/objects.a
-I:\msys64\ucrt64\bin\ar.exe qc CMakeFiles\sdl_websocket_renderer.dir/objects.a @CMakeFiles\sdl_websocket_renderer.dir\objects1.rsp
-g++ -g -Wl,--whole-archive CMakeFiles\sdl_websocket_renderer.dir/objects.a -Wl,--no-whole-archive -o sdl_websocket_renderer.exe -Wl,--out-implib,libsdl_websocket_renderer.dll.a -Wl,--major-image-version,0,--minor-image-version,0 @CMakeFiles\sdl_websocket_renderer.dir\linkLibs.rsp

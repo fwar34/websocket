@@ -1,3 +1,8 @@
-H:/websocket/build/CMakeFiles/sdl_websocket_renderer.dir
 H:/websocket/build/CMakeFiles/edit_cache.dir
 H:/websocket/build/CMakeFiles/rebuild_cache.dir
+H:/websocket/build/sdl-rect/CMakeFiles/sdl_rect.dir
+H:/websocket/build/sdl-rect/CMakeFiles/edit_cache.dir
+H:/websocket/build/sdl-rect/CMakeFiles/rebuild_cache.dir
+H:/websocket/build/sdl-video/CMakeFiles/sdl_video.dir
+H:/websocket/build/sdl-video/CMakeFiles/edit_cache.dir
+H:/websocket/build/sdl-video/CMakeFiles/rebuild_cache.dir

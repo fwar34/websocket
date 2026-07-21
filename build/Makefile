@@ -116,113 +116,30 @@ depend:
 .PHONY : depend
 
 #=============================================================================
-# Target rules for targets named sdl_websocket_renderer
+# Target rules for targets named sdl_rect
 
 # Build rule for target.
-sdl_websocket_renderer: cmake_check_build_system
-	$(MAKE) $(MAKESILENT) -f CMakeFiles\Makefile2 sdl_websocket_renderer
-.PHONY : sdl_websocket_renderer
+sdl_rect: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\Makefile2 sdl_rect
+.PHONY : sdl_rect
 
 # fast build rule for target.
-sdl_websocket_renderer/fast:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles\sdl_websocket_renderer.dir\build.make CMakeFiles/sdl_websocket_renderer.dir/build
-.PHONY : sdl_websocket_renderer/fast
+sdl_rect/fast:
+	$(MAKE) $(MAKESILENT) -f sdl-rect\CMakeFiles\sdl_rect.dir\build.make sdl-rect/CMakeFiles/sdl_rect.dir/build
+.PHONY : sdl_rect/fast
 
-src/main.obj: src/main.cpp.obj
-.PHONY : src/main.obj
+#=============================================================================
+# Target rules for targets named sdl_video
 
-# target to build an object file
-src/main.cpp.obj:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles\sdl_websocket_renderer.dir\build.make CMakeFiles/sdl_websocket_renderer.dir/src/main.cpp.obj
-.PHONY : src/main.cpp.obj
+# Build rule for target.
+sdl_video: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\Makefile2 sdl_video
+.PHONY : sdl_video
 
-src/main.i: src/main.cpp.i
-.PHONY : src/main.i
-
-# target to preprocess a source file
-src/main.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles\sdl_websocket_renderer.dir\build.make CMakeFiles/sdl_websocket_renderer.dir/src/main.cpp.i
-.PHONY : src/main.cpp.i
-
-src/main.s: src/main.cpp.s
-.PHONY : src/main.s
-
-# target to generate assembly for a file
-src/main.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles\sdl_websocket_renderer.dir\build.make CMakeFiles/sdl_websocket_renderer.dir/src/main.cpp.s
-.PHONY : src/main.cpp.s
-
-src/utils/base64.obj: src/utils/base64.c.obj
-.PHONY : src/utils/base64.obj
-
-# target to build an object file
-src/utils/base64.c.obj:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles\sdl_websocket_renderer.dir\build.make CMakeFiles/sdl_websocket_renderer.dir/src/utils/base64.c.obj
-.PHONY : src/utils/base64.c.obj
-
-src/utils/base64.i: src/utils/base64.c.i
-.PHONY : src/utils/base64.i
-
-# target to preprocess a source file
-src/utils/base64.c.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles\sdl_websocket_renderer.dir\build.make CMakeFiles/sdl_websocket_renderer.dir/src/utils/base64.c.i
-.PHONY : src/utils/base64.c.i
-
-src/utils/base64.s: src/utils/base64.c.s
-.PHONY : src/utils/base64.s
-
-# target to generate assembly for a file
-src/utils/base64.c.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles\sdl_websocket_renderer.dir\build.make CMakeFiles/sdl_websocket_renderer.dir/src/utils/base64.c.s
-.PHONY : src/utils/base64.c.s
-
-src/utils/sha1.obj: src/utils/sha1.c.obj
-.PHONY : src/utils/sha1.obj
-
-# target to build an object file
-src/utils/sha1.c.obj:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles\sdl_websocket_renderer.dir\build.make CMakeFiles/sdl_websocket_renderer.dir/src/utils/sha1.c.obj
-.PHONY : src/utils/sha1.c.obj
-
-src/utils/sha1.i: src/utils/sha1.c.i
-.PHONY : src/utils/sha1.i
-
-# target to preprocess a source file
-src/utils/sha1.c.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles\sdl_websocket_renderer.dir\build.make CMakeFiles/sdl_websocket_renderer.dir/src/utils/sha1.c.i
-.PHONY : src/utils/sha1.c.i
-
-src/utils/sha1.s: src/utils/sha1.c.s
-.PHONY : src/utils/sha1.s
-
-# target to generate assembly for a file
-src/utils/sha1.c.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles\sdl_websocket_renderer.dir\build.make CMakeFiles/sdl_websocket_renderer.dir/src/utils/sha1.c.s
-.PHONY : src/utils/sha1.c.s
-
-src/websocket_server.obj: src/websocket_server.cpp.obj
-.PHONY : src/websocket_server.obj
-
-# target to build an object file
-src/websocket_server.cpp.obj:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles\sdl_websocket_renderer.dir\build.make CMakeFiles/sdl_websocket_renderer.dir/src/websocket_server.cpp.obj
-.PHONY : src/websocket_server.cpp.obj
-
-src/websocket_server.i: src/websocket_server.cpp.i
-.PHONY : src/websocket_server.i
-
-# target to preprocess a source file
-src/websocket_server.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles\sdl_websocket_renderer.dir\build.make CMakeFiles/sdl_websocket_renderer.dir/src/websocket_server.cpp.i
-.PHONY : src/websocket_server.cpp.i
-
-src/websocket_server.s: src/websocket_server.cpp.s
-.PHONY : src/websocket_server.s
-
-# target to generate assembly for a file
-src/websocket_server.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles\sdl_websocket_renderer.dir\build.make CMakeFiles/sdl_websocket_renderer.dir/src/websocket_server.cpp.s
-.PHONY : src/websocket_server.cpp.s
+# fast build rule for target.
+sdl_video/fast:
+	$(MAKE) $(MAKESILENT) -f sdl-video\CMakeFiles\sdl_video.dir\build.make sdl-video/CMakeFiles/sdl_video.dir/build
+.PHONY : sdl_video/fast
 
 # Help Target
 help:
@@ -232,19 +149,8 @@ help:
 	@echo ... depend
 	@echo ... edit_cache
 	@echo ... rebuild_cache
-	@echo ... sdl_websocket_renderer
-	@echo ... src/main.obj
-	@echo ... src/main.i
-	@echo ... src/main.s
-	@echo ... src/utils/base64.obj
-	@echo ... src/utils/base64.i
-	@echo ... src/utils/base64.s
-	@echo ... src/utils/sha1.obj
-	@echo ... src/utils/sha1.i
-	@echo ... src/utils/sha1.s
-	@echo ... src/websocket_server.obj
-	@echo ... src/websocket_server.i
-	@echo ... src/websocket_server.s
+	@echo ... sdl_rect
+	@echo ... sdl_video
 .PHONY : help
 
 

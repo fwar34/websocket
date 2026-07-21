@@ -1,7 +1,9 @@
 {
 	"InstallScripts" : 
 	[
-		"H:/websocket/build/cmake_install.cmake"
+		"H:/websocket/build/cmake_install.cmake",
+		"H:/websocket/build/sdl-rect/cmake_install.cmake",
+		"H:/websocket/build/sdl-video/cmake_install.cmake"
 	],
 	"Parallel" : false
 }
