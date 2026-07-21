@@ -208,7 +208,7 @@ void parse_events(const std::string& json) {
         
         Event event{};
         
-        size_t type_start = obj.find("\"type\":\"") + 7;
+        size_t type_start = obj.find("\"type\":\"") + 8;
         size_t type_end = obj.find("\"", type_start);
         if (type_start != std::string::npos && type_end != std::string::npos) {
             event.type = obj.substr(type_start, type_end - type_start);
@@ -252,6 +252,9 @@ void parse_events(const std::string& json) {
         }
         
         if (!event.type.empty()) {
+            printf("[Event] type=%s, keycode=%d, x=%d, y=%d, button=%d\n",
+                   event.type.c_str(), event.keycode, event.x, event.y, event.button);
+            fflush(stdout);
             std::lock_guard<std::mutex> lock(g_server_state.events_mutex);
             g_server_state.events.push(event);
         }

@@ -1,0 +1,26 @@
+[
+{
+  "directory": "H:/websocket/build",
+  "command": "g++  @CMakeFiles/sdl_websocket_renderer.dir/includes_CXX.rsp -g -std=gnu++17 -g -O0 -Wall -Wextra -o CMakeFiles\\sdl_websocket_renderer.dir\\src\\main.cpp.obj -c H:\\websocket\\src\\main.cpp",
+  "file": "H:/websocket/src/main.cpp",
+  "output": "CMakeFiles/sdl_websocket_renderer.dir/src/main.cpp.obj"
+},
+{
+  "directory": "H:/websocket/build",
+  "command": "g++  @CMakeFiles/sdl_websocket_renderer.dir/includes_CXX.rsp -g -std=gnu++17 -g -O0 -Wall -Wextra -o CMakeFiles\\sdl_websocket_renderer.dir\\src\\websocket_server.cpp.obj -c H:\\websocket\\src\\websocket_server.cpp",
+  "file": "H:/websocket/src/websocket_server.cpp",
+  "output": "CMakeFiles/sdl_websocket_renderer.dir/src/websocket_server.cpp.obj"
+},
+{
+  "directory": "H:/websocket/build",
+  "command": "gcc  @CMakeFiles/sdl_websocket_renderer.dir/includes_C.rsp -g -g -O0 -Wall -Wextra -o CMakeFiles\\sdl_websocket_renderer.dir\\src\\utils\\sha1.c.obj -c H:\\websocket\\src\\utils\\sha1.c",
+  "file": "H:/websocket/src/utils/sha1.c",
+  "output": "CMakeFiles/sdl_websocket_renderer.dir/src/utils/sha1.c.obj"
+},
+{
+  "directory": "H:/websocket/build",
+  "command": "gcc  @CMakeFiles/sdl_websocket_renderer.dir/includes_C.rsp -g -g -O0 -Wall -Wextra -o CMakeFiles\\sdl_websocket_renderer.dir\\src\\utils\\base64.c.obj -c H:\\websocket\\src\\utils\\base64.c",
+  "file": "H:/websocket/src/utils/base64.c",
+  "output": "CMakeFiles/sdl_websocket_renderer.dir/src/utils/base64.c.obj"
+}
+]
