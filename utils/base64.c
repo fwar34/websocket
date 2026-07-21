@@ -129,7 +129,7 @@ static int __encodeData(void* struct_this, const void* d, size_t l, int isFinal)
     return __encode(struct_this);
 }
 
-#define SetTemp(_i, _input, _output) _output = 0xFF; for(_i=0; _i<BASE64_CHLEN; _i++) if(BASE64_CHARS[_i]==_input) _output=_i
+#define SetTemp(_i, _input, _output) _output = 0xFF; for(_i=0; _i<(size_t)BASE64_CHLEN; _i++) if(BASE64_CHARS[_i]==_input) _output=_i
 
 static int __decode(void* struct_this) {
     size_t tmp;

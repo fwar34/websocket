@@ -152,11 +152,6 @@ void send_websocket_frame(SOCKET sock, const uint8_t* data, size_t length, uint8
     send(sock, reinterpret_cast<const char*>(frame.data()), frame.size(), 0);
 }
 
-void send_ping(SOCKET sock) {
-    uint8_t ping_data[] = {0x89, 0x00};
-    send(sock, reinterpret_cast<const char*>(ping_data), 2, 0);
-}
-
 void send_pong(SOCKET sock, const uint8_t* data, size_t length) {
     std::vector<uint8_t> frame;
     frame.push_back(0x8A);
@@ -267,7 +262,6 @@ void process_websocket_frame(SOCKET sock, const std::vector<uint8_t>& frame) {
     }
     
     uint8_t opcode = frame[0] & 0x0F;
-    bool fin = (frame[0] & 0x80) != 0;
     bool masked = (frame[1] & 0x80) != 0;
     size_t payload_len = frame[1] & 0x7F;
     
@@ -433,8 +427,6 @@ void client_thread(std::shared_ptr<WebSocketClient> client) {
             }
         } else {
             while (receive_buffer.size() >= 2) {
-                uint8_t opcode = receive_buffer[0] & 0x0F;
-                bool fin = (receive_buffer[0] & 0x80) != 0;
                 bool masked = (receive_buffer[1] & 0x80) != 0;
                 size_t payload_len = receive_buffer[1] & 0x7F;
                 
