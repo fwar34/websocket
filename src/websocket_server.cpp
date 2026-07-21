@@ -531,13 +531,15 @@ void WebSocketServer::stop() {
 }
 
 void WebSocketServer::send_framebuffer(const uint8_t* data, int width, int height, int pitch) {
-    std::lock_guard<std::mutex> lock(g_server_state.framebuffer_mutex);
-    g_server_state.framebuffer.resize(static_cast<size_t>(height) * static_cast<size_t>(pitch));
-    std::memcpy(g_server_state.framebuffer.data(), data, g_server_state.framebuffer.size());
-    g_server_state.frame_width = width;
-    g_server_state.frame_height = height;
-    g_server_state.frame_pitch = pitch;
-    g_server_state.new_frame = true;
+    {
+        std::lock_guard<std::mutex> lock(g_server_state.framebuffer_mutex);
+        g_server_state.framebuffer.resize(static_cast<size_t>(height) * static_cast<size_t>(pitch));
+        std::memcpy(g_server_state.framebuffer.data(), data, g_server_state.framebuffer.size());
+        g_server_state.frame_width = width;
+        g_server_state.frame_height = height;
+        g_server_state.frame_pitch = pitch;
+        g_server_state.new_frame = true;
+    }
     
     trigger_writeable();
 }
