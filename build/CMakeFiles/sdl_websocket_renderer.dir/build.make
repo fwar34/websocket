@@ -101,23 +101,57 @@ CMakeFiles/sdl_websocket_renderer.dir/src/websocket_server.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/sdl_websocket_renderer.dir/src/websocket_server.cpp.s"
 	g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S H:\websocket\src\websocket_server.cpp -o CMakeFiles\sdl_websocket_renderer.dir\src\websocket_server.cpp.s
 
+CMakeFiles/sdl_websocket_renderer.dir/src/utils/sha1.c.obj: CMakeFiles/sdl_websocket_renderer.dir/flags.make
+CMakeFiles/sdl_websocket_renderer.dir/src/utils/sha1.c.obj: CMakeFiles/sdl_websocket_renderer.dir/includes_C.rsp
+CMakeFiles/sdl_websocket_renderer.dir/src/utils/sha1.c.obj: H:/websocket/src/utils/sha1.c
+CMakeFiles/sdl_websocket_renderer.dir/src/utils/sha1.c.obj: CMakeFiles/sdl_websocket_renderer.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=H:\websocket\build\CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Building C object CMakeFiles/sdl_websocket_renderer.dir/src/utils/sha1.c.obj"
+	gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/sdl_websocket_renderer.dir/src/utils/sha1.c.obj -MF CMakeFiles\sdl_websocket_renderer.dir\src\utils\sha1.c.obj.d -o CMakeFiles\sdl_websocket_renderer.dir\src\utils\sha1.c.obj -c H:\websocket\src\utils\sha1.c
+
+CMakeFiles/sdl_websocket_renderer.dir/src/utils/sha1.c.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing C source to CMakeFiles/sdl_websocket_renderer.dir/src/utils/sha1.c.i"
+	gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E H:\websocket\src\utils\sha1.c > CMakeFiles\sdl_websocket_renderer.dir\src\utils\sha1.c.i
+
+CMakeFiles/sdl_websocket_renderer.dir/src/utils/sha1.c.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling C source to assembly CMakeFiles/sdl_websocket_renderer.dir/src/utils/sha1.c.s"
+	gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S H:\websocket\src\utils\sha1.c -o CMakeFiles\sdl_websocket_renderer.dir\src\utils\sha1.c.s
+
+CMakeFiles/sdl_websocket_renderer.dir/src/utils/base64.c.obj: CMakeFiles/sdl_websocket_renderer.dir/flags.make
+CMakeFiles/sdl_websocket_renderer.dir/src/utils/base64.c.obj: CMakeFiles/sdl_websocket_renderer.dir/includes_C.rsp
+CMakeFiles/sdl_websocket_renderer.dir/src/utils/base64.c.obj: H:/websocket/src/utils/base64.c
+CMakeFiles/sdl_websocket_renderer.dir/src/utils/base64.c.obj: CMakeFiles/sdl_websocket_renderer.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=H:\websocket\build\CMakeFiles --progress-num=$(CMAKE_PROGRESS_4) "Building C object CMakeFiles/sdl_websocket_renderer.dir/src/utils/base64.c.obj"
+	gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/sdl_websocket_renderer.dir/src/utils/base64.c.obj -MF CMakeFiles\sdl_websocket_renderer.dir\src\utils\base64.c.obj.d -o CMakeFiles\sdl_websocket_renderer.dir\src\utils\base64.c.obj -c H:\websocket\src\utils\base64.c
+
+CMakeFiles/sdl_websocket_renderer.dir/src/utils/base64.c.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing C source to CMakeFiles/sdl_websocket_renderer.dir/src/utils/base64.c.i"
+	gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E H:\websocket\src\utils\base64.c > CMakeFiles\sdl_websocket_renderer.dir\src\utils\base64.c.i
+
+CMakeFiles/sdl_websocket_renderer.dir/src/utils/base64.c.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling C source to assembly CMakeFiles/sdl_websocket_renderer.dir/src/utils/base64.c.s"
+	gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S H:\websocket\src\utils\base64.c -o CMakeFiles\sdl_websocket_renderer.dir\src\utils\base64.c.s
+
 # Object files for target sdl_websocket_renderer
 sdl_websocket_renderer_OBJECTS = \
 "CMakeFiles/sdl_websocket_renderer.dir/src/main.cpp.obj" \
-"CMakeFiles/sdl_websocket_renderer.dir/src/websocket_server.cpp.obj"
+"CMakeFiles/sdl_websocket_renderer.dir/src/websocket_server.cpp.obj" \
+"CMakeFiles/sdl_websocket_renderer.dir/src/utils/sha1.c.obj" \
+"CMakeFiles/sdl_websocket_renderer.dir/src/utils/base64.c.obj"
 
 # External object files for target sdl_websocket_renderer
 sdl_websocket_renderer_EXTERNAL_OBJECTS =
 
 sdl_websocket_renderer.exe: CMakeFiles/sdl_websocket_renderer.dir/src/main.cpp.obj
 sdl_websocket_renderer.exe: CMakeFiles/sdl_websocket_renderer.dir/src/websocket_server.cpp.obj
+sdl_websocket_renderer.exe: CMakeFiles/sdl_websocket_renderer.dir/src/utils/sha1.c.obj
+sdl_websocket_renderer.exe: CMakeFiles/sdl_websocket_renderer.dir/src/utils/base64.c.obj
 sdl_websocket_renderer.exe: CMakeFiles/sdl_websocket_renderer.dir/build.make
 sdl_websocket_renderer.exe: I:/msys64/ucrt64/lib/libSDL2main.a
 sdl_websocket_renderer.exe: I:/msys64/ucrt64/lib/libSDL2.dll.a
 sdl_websocket_renderer.exe: CMakeFiles/sdl_websocket_renderer.dir/linkLibs.rsp
 sdl_websocket_renderer.exe: CMakeFiles/sdl_websocket_renderer.dir/objects1.rsp
 sdl_websocket_renderer.exe: CMakeFiles/sdl_websocket_renderer.dir/link.txt
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=H:\websocket\build\CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Linking CXX executable sdl_websocket_renderer.exe"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=H:\websocket\build\CMakeFiles --progress-num=$(CMAKE_PROGRESS_5) "Linking CXX executable sdl_websocket_renderer.exe"
 	$(CMAKE_COMMAND) -E cmake_link_script CMakeFiles\sdl_websocket_renderer.dir\link.txt --verbose=$(VERBOSE)
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --blue --bold "Copying client.html to build directory"
 	I:\msys64\ucrt64\bin\cmake.exe -E copy_if_different H:/websocket/client.html H:/websocket/build/client.html

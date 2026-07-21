@@ -152,6 +152,54 @@ src/main.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\sdl_websocket_renderer.dir\build.make CMakeFiles/sdl_websocket_renderer.dir/src/main.cpp.s
 .PHONY : src/main.cpp.s
 
+src/utils/base64.obj: src/utils/base64.c.obj
+.PHONY : src/utils/base64.obj
+
+# target to build an object file
+src/utils/base64.c.obj:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\sdl_websocket_renderer.dir\build.make CMakeFiles/sdl_websocket_renderer.dir/src/utils/base64.c.obj
+.PHONY : src/utils/base64.c.obj
+
+src/utils/base64.i: src/utils/base64.c.i
+.PHONY : src/utils/base64.i
+
+# target to preprocess a source file
+src/utils/base64.c.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\sdl_websocket_renderer.dir\build.make CMakeFiles/sdl_websocket_renderer.dir/src/utils/base64.c.i
+.PHONY : src/utils/base64.c.i
+
+src/utils/base64.s: src/utils/base64.c.s
+.PHONY : src/utils/base64.s
+
+# target to generate assembly for a file
+src/utils/base64.c.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\sdl_websocket_renderer.dir\build.make CMakeFiles/sdl_websocket_renderer.dir/src/utils/base64.c.s
+.PHONY : src/utils/base64.c.s
+
+src/utils/sha1.obj: src/utils/sha1.c.obj
+.PHONY : src/utils/sha1.obj
+
+# target to build an object file
+src/utils/sha1.c.obj:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\sdl_websocket_renderer.dir\build.make CMakeFiles/sdl_websocket_renderer.dir/src/utils/sha1.c.obj
+.PHONY : src/utils/sha1.c.obj
+
+src/utils/sha1.i: src/utils/sha1.c.i
+.PHONY : src/utils/sha1.i
+
+# target to preprocess a source file
+src/utils/sha1.c.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\sdl_websocket_renderer.dir\build.make CMakeFiles/sdl_websocket_renderer.dir/src/utils/sha1.c.i
+.PHONY : src/utils/sha1.c.i
+
+src/utils/sha1.s: src/utils/sha1.c.s
+.PHONY : src/utils/sha1.s
+
+# target to generate assembly for a file
+src/utils/sha1.c.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\sdl_websocket_renderer.dir\build.make CMakeFiles/sdl_websocket_renderer.dir/src/utils/sha1.c.s
+.PHONY : src/utils/sha1.c.s
+
 src/websocket_server.obj: src/websocket_server.cpp.obj
 .PHONY : src/websocket_server.obj
 
@@ -188,6 +236,12 @@ help:
 	@echo ... src/main.obj
 	@echo ... src/main.i
 	@echo ... src/main.s
+	@echo ... src/utils/base64.obj
+	@echo ... src/utils/base64.i
+	@echo ... src/utils/base64.s
+	@echo ... src/utils/sha1.obj
+	@echo ... src/utils/sha1.i
+	@echo ... src/utils/sha1.s
 	@echo ... src/websocket_server.obj
 	@echo ... src/websocket_server.i
 	@echo ... src/websocket_server.s

@@ -1,6 +1,10 @@
 file(REMOVE_RECURSE
   "CMakeFiles/sdl_websocket_renderer.dir/src/main.cpp.obj"
   "CMakeFiles/sdl_websocket_renderer.dir/src/main.cpp.obj.d"
+  "CMakeFiles/sdl_websocket_renderer.dir/src/utils/base64.c.obj"
+  "CMakeFiles/sdl_websocket_renderer.dir/src/utils/base64.c.obj.d"
+  "CMakeFiles/sdl_websocket_renderer.dir/src/utils/sha1.c.obj"
+  "CMakeFiles/sdl_websocket_renderer.dir/src/utils/sha1.c.obj.d"
   "CMakeFiles/sdl_websocket_renderer.dir/src/websocket_server.cpp.obj"
   "CMakeFiles/sdl_websocket_renderer.dir/src/websocket_server.cpp.obj.d"
   "libsdl_websocket_renderer.dll.a"
@@ -10,6 +14,6 @@ file(REMOVE_RECURSE
 )
 
 # Per-language clean rules from dependency scanning.
-foreach(lang CXX)
+foreach(lang C CXX)
   include(CMakeFiles/sdl_websocket_renderer.dir/cmake_clean_${lang}.cmake OPTIONAL)
 endforeach()

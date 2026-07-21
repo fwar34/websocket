@@ -29,7 +29,7 @@
         canvas.width = width;
         canvas.height = height;
         
-        const ws = new WebSocket('ws://' + window.location.host, 'ws-protocol');
+        const ws = new WebSocket('ws://' + window.location.host);
         
         ws.binaryType = 'arraybuffer';
         

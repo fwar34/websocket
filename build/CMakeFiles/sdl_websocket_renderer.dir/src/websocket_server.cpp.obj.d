@@ -142,17 +142,15 @@ CMakeFiles/sdl_websocket_renderer.dir/src/websocket_server.cpp.obj: \
  I:/msys64/ucrt64/include/c++/15.2.0/atomic \
  I:/msys64/ucrt64/include/c++/15.2.0/bits/atomic_base.h \
  I:/msys64/ucrt64/include/c++/15.2.0/bits/atomic_lockfree_defines.h \
- I:/msys64/ucrt64/include/libwebsockets.h \
- I:/msys64/ucrt64/include/c++/15.2.0/cstdarg \
- I:/msys64/ucrt64/lib/gcc/x86_64-w64-mingw32/15.2.0/include/stdarg.h \
- I:/msys64/ucrt64/include/stdarg.h \
- I:/msys64/ucrt64/include/_mingw_stdarg.h \
- I:/msys64/ucrt64/include/lws_config.h I:/msys64/ucrt64/include/string.h \
- I:/msys64/ucrt64/include/sec_api/string_s.h \
+ H:\websocket\src\utils/sha1.h H:\websocket\src\utils/base64.h \
  I:/msys64/ucrt64/include/winsock2.h \
  I:/msys64/ucrt64/include/_mingw_unicode.h \
  I:/msys64/ucrt64/include/windows.h I:/msys64/ucrt64/include/sdkddkver.h \
- I:/msys64/ucrt64/include/excpt.h I:/msys64/ucrt64/include/windef.h \
+ I:/msys64/ucrt64/include/excpt.h \
+ I:/msys64/ucrt64/lib/gcc/x86_64-w64-mingw32/15.2.0/include/stdarg.h \
+ I:/msys64/ucrt64/include/stdarg.h \
+ I:/msys64/ucrt64/include/_mingw_stdarg.h \
+ I:/msys64/ucrt64/include/windef.h \
  I:/msys64/ucrt64/include/winapifamily.h \
  I:/msys64/ucrt64/include/minwindef.h \
  I:/msys64/ucrt64/include/specstrings.h I:/msys64/ucrt64/include/sal.h \
@@ -161,6 +159,8 @@ CMakeFiles/sdl_websocket_renderer.dir/src/websocket_server.cpp.obj: \
  I:/msys64/ucrt64/include/apiset.h \
  I:/msys64/ucrt64/include/psdk_inc/intrin-impl.h \
  I:/msys64/ucrt64/include/basetsd.h I:/msys64/ucrt64/include/guiddef.h \
+ I:/msys64/ucrt64/include/string.h \
+ I:/msys64/ucrt64/include/sec_api/string_s.h \
  I:/msys64/ucrt64/lib/gcc/x86_64-w64-mingw32/15.2.0/include/x86intrin.h \
  I:/msys64/ucrt64/lib/gcc/x86_64-w64-mingw32/15.2.0/include/x86gprintrin.h \
  I:/msys64/ucrt64/lib/gcc/x86_64-w64-mingw32/15.2.0/include/ia32intrin.h \
@@ -323,7 +323,37 @@ CMakeFiles/sdl_websocket_renderer.dir/src/websocket_server.cpp.obj: \
  I:/msys64/ucrt64/include/consoleapi3.h I:/msys64/ucrt64/include/winver.h \
  I:/msys64/ucrt64/include/winreg.h I:/msys64/ucrt64/include/reason.h \
  I:/msys64/ucrt64/include/winnetwk.h I:/msys64/ucrt64/include/wnnc.h \
- I:/msys64/ucrt64/include/virtdisk.h I:/msys64/ucrt64/include/stralign.h \
+ I:/msys64/ucrt64/include/virtdisk.h I:/msys64/ucrt64/include/cderr.h \
+ I:/msys64/ucrt64/include/dde.h I:/msys64/ucrt64/include/ddeml.h \
+ I:/msys64/ucrt64/include/dlgs.h I:/msys64/ucrt64/include/lzexpand.h \
+ I:/msys64/ucrt64/include/mmsystem.h I:/msys64/ucrt64/include/mmsyscom.h \
+ I:/msys64/ucrt64/include/mciapi.h I:/msys64/ucrt64/include/mmiscapi.h \
+ I:/msys64/ucrt64/include/mmiscapi2.h \
+ I:/msys64/ucrt64/include/playsoundapi.h \
+ I:/msys64/ucrt64/include/mmeapi.h I:/msys64/ucrt64/include/timeapi.h \
+ I:/msys64/ucrt64/include/joystickapi.h I:/msys64/ucrt64/include/nb30.h \
+ I:/msys64/ucrt64/include/rpc.h I:/msys64/ucrt64/include/rpcdce.h \
+ I:/msys64/ucrt64/include/rpcdcep.h I:/msys64/ucrt64/include/rpcnsi.h \
+ I:/msys64/ucrt64/include/rpcnterr.h I:/msys64/ucrt64/include/rpcasync.h \
+ I:/msys64/ucrt64/include/shellapi.h I:/msys64/ucrt64/include/winperf.h \
+ I:/msys64/ucrt64/include/winsock.h I:/msys64/ucrt64/include/wincrypt.h \
+ I:/msys64/ucrt64/include/bcrypt.h I:/msys64/ucrt64/include/ncrypt.h \
+ I:/msys64/ucrt64/include/dpapi.h I:/msys64/ucrt64/include/winefs.h \
+ I:/msys64/ucrt64/include/winscard.h I:/msys64/ucrt64/include/wtypes.h \
+ I:/msys64/ucrt64/include/rpcndr.h I:/msys64/ucrt64/include/rpcnsip.h \
+ I:/msys64/ucrt64/include/rpcsal.h I:/msys64/ucrt64/include/ole2.h \
+ I:/msys64/ucrt64/include/objbase.h I:/msys64/ucrt64/include/combaseapi.h \
+ I:/msys64/ucrt64/include/wtypesbase.h \
+ I:/msys64/ucrt64/include/unknwnbase.h \
+ I:/msys64/ucrt64/include/objidlbase.h I:/msys64/ucrt64/include/cguid.h \
+ I:/msys64/ucrt64/include/objidl.h I:/msys64/ucrt64/include/unknwn.h \
+ I:/msys64/ucrt64/include/urlmon.h I:/msys64/ucrt64/include/oleidl.h \
+ I:/msys64/ucrt64/include/servprov.h I:/msys64/ucrt64/include/msxml.h \
+ I:/msys64/ucrt64/include/oaidl.h I:/msys64/ucrt64/include/propidl.h \
+ I:/msys64/ucrt64/include/oleauto.h I:/msys64/ucrt64/include/winioctl.h \
+ I:/msys64/ucrt64/include/winsmcrd.h I:/msys64/ucrt64/include/winspool.h \
+ I:/msys64/ucrt64/include/prsht.h I:/msys64/ucrt64/include/commdlg.h \
+ I:/msys64/ucrt64/include/stralign.h \
  I:/msys64/ucrt64/include/sec_api/stralign_s.h \
  I:/msys64/ucrt64/include/winsvc.h I:/msys64/ucrt64/include/mcx.h \
  I:/msys64/ucrt64/include/imm.h \
@@ -338,161 +368,10 @@ CMakeFiles/sdl_websocket_renderer.dir/src/websocket_server.cpp.obj: \
  I:/msys64/ucrt64/include/qos.h I:/msys64/ucrt64/include/ws2tcpip.h \
  I:/msys64/ucrt64/include/ws2ipdef.h I:/msys64/ucrt64/include/in6addr.h \
  I:/msys64/ucrt64/include/psdk_inc/_ip_mreq1.h \
- I:/msys64/ucrt64/include/mstcpip.h I:/msys64/ucrt64/include/io.h \
- I:/msys64/ucrt64/include/fcntl.h I:/msys64/ucrt64/include/openssl/ssl.h \
- I:/msys64/ucrt64/include/openssl/macros.h \
- I:/msys64/ucrt64/include/openssl/opensslconf.h \
- I:/msys64/ucrt64/include/openssl/configuration.h \
- I:/msys64/ucrt64/include/openssl/opensslv.h \
- I:/msys64/ucrt64/include/openssl/e_os2.h \
- I:/msys64/ucrt64/include/openssl/e_ostime.h \
- I:/msys64/ucrt64/include/openssl/comp.h \
- I:/msys64/ucrt64/include/openssl/crypto.h \
- I:/msys64/ucrt64/include/openssl/safestack.h \
- I:/msys64/ucrt64/include/openssl/stack.h \
- I:/msys64/ucrt64/include/openssl/types.h \
- I:/msys64/ucrt64/include/openssl/cryptoerr.h \
- I:/msys64/ucrt64/include/openssl/symhacks.h \
- I:/msys64/ucrt64/include/openssl/cryptoerr_legacy.h \
- I:/msys64/ucrt64/include/openssl/core.h \
- I:/msys64/ucrt64/include/openssl/comperr.h \
- I:/msys64/ucrt64/include/openssl/bio.h \
- I:/msys64/ucrt64/include/openssl/bioerr.h \
- I:/msys64/ucrt64/include/openssl/x509.h \
- I:/msys64/ucrt64/include/openssl/buffer.h \
- I:/msys64/ucrt64/include/openssl/buffererr.h \
- I:/msys64/ucrt64/include/openssl/evp.h \
- I:/msys64/ucrt64/include/openssl/core_dispatch.h \
- I:/msys64/ucrt64/include/openssl/indicator.h \
- I:/msys64/ucrt64/include/openssl/params.h \
- I:/msys64/ucrt64/include/openssl/bn.h \
- I:/msys64/ucrt64/include/openssl/bnerr.h \
- I:/msys64/ucrt64/include/openssl/evperr.h \
- I:/msys64/ucrt64/include/openssl/objects.h \
- I:/msys64/ucrt64/include/openssl/obj_mac.h \
- I:/msys64/ucrt64/include/openssl/asn1.h \
- I:/msys64/ucrt64/include/openssl/asn1err.h \
- I:/msys64/ucrt64/include/openssl/objectserr.h \
- I:/msys64/ucrt64/include/openssl/ec.h \
- I:/msys64/ucrt64/include/openssl/ecerr.h \
- I:/msys64/ucrt64/include/openssl/rsa.h \
- I:/msys64/ucrt64/include/openssl/rsaerr.h \
- I:/msys64/ucrt64/include/openssl/dsa.h \
- I:/msys64/ucrt64/include/openssl/dh.h \
- I:/msys64/ucrt64/include/openssl/dherr.h \
- I:/msys64/ucrt64/include/openssl/dsaerr.h \
- I:/msys64/ucrt64/include/openssl/sha.h \
- I:/msys64/ucrt64/include/openssl/x509err.h \
- I:/msys64/ucrt64/include/openssl/x509_vfy.h \
- I:/msys64/ucrt64/include/openssl/lhash.h \
- I:/msys64/ucrt64/include/openssl/pkcs7.h \
- I:/msys64/ucrt64/include/openssl/pkcs7err.h \
- I:/msys64/ucrt64/include/openssl/http.h \
- I:/msys64/ucrt64/include/openssl/conf.h \
- I:/msys64/ucrt64/include/openssl/conferr.h \
- I:/msys64/ucrt64/include/openssl/conftypes.h \
- I:/msys64/ucrt64/include/openssl/pem.h \
- I:/msys64/ucrt64/include/openssl/pemerr.h \
- I:/msys64/ucrt64/include/openssl/hmac.h \
- I:/msys64/ucrt64/include/openssl/async.h \
- I:/msys64/ucrt64/include/openssl/asyncerr.h \
- I:/msys64/ucrt64/include/openssl/ct.h \
- I:/msys64/ucrt64/include/openssl/cterr.h \
- I:/msys64/ucrt64/include/openssl/sslerr.h \
- I:/msys64/ucrt64/include/openssl/sslerr_legacy.h \
- I:/msys64/ucrt64/include/openssl/prov_ssl.h \
- I:/msys64/ucrt64/include/openssl/ssl2.h \
- I:/msys64/ucrt64/include/openssl/ssl3.h \
- I:/msys64/ucrt64/include/openssl/tls1.h \
- I:/msys64/ucrt64/include/openssl/dtls1.h \
- I:/msys64/ucrt64/include/openssl/srtp.h \
- I:/msys64/ucrt64/include/openssl/quic.h \
- I:/msys64/ucrt64/include/openssl/err.h \
- I:/msys64/ucrt64/include/libwebsockets/lws-logs.h \
- I:/msys64/ucrt64/include/sys/stat.h \
- I:/msys64/ucrt64/include/libwebsockets/lws-dll2.h \
- I:/msys64/ucrt64/include/libwebsockets/lws-map.h \
- I:/msys64/ucrt64/include/libwebsockets/lws-fault-injection.h \
- I:/msys64/ucrt64/include/libwebsockets/lws-backtrace.h \
- I:/msys64/ucrt64/include/libwebsockets/lws-timeout-timer.h \
- I:/msys64/ucrt64/include/libwebsockets/lws-cache-ttl.h \
- I:/msys64/ucrt64/include/libwebsockets/lws-state.h \
- I:/msys64/ucrt64/include/libwebsockets/lws-retry.h \
- I:/msys64/ucrt64/include/libwebsockets/lws-adopt.h \
- I:/msys64/ucrt64/include/libwebsockets/lws-network-helper.h \
- I:/msys64/ucrt64/include/libwebsockets/lws-metrics.h \
- I:/msys64/ucrt64/include/libwebsockets/lws-ota.h \
- I:/msys64/ucrt64/include/libwebsockets/lws-system.h \
- I:/msys64/ucrt64/include/libwebsockets/lws-callbacks.h \
- I:/msys64/ucrt64/include/libwebsockets/lws-ws-close.h \
- I:/msys64/ucrt64/include/libwebsockets/lws-ws-state.h \
- I:/msys64/ucrt64/include/libwebsockets/lws-ws-ext.h \
- I:/msys64/ucrt64/include/libwebsockets/lws-protocols-plugins.h \
- I:/msys64/ucrt64/include/libwebsockets/lws-context-vhost.h \
- I:/msys64/ucrt64/include/libwebsockets/lws-conmon.h \
- I:/msys64/ucrt64/include/libwebsockets/lws-client.h \
- I:/msys64/ucrt64/include/libwebsockets/lws-http.h \
- I:/msys64/ucrt64/include/libwebsockets/lws-spa.h \
- I:/msys64/ucrt64/include/libwebsockets/lws-purify.h \
- I:/msys64/ucrt64/include/libwebsockets/lws-misc.h \
- I:/msys64/ucrt64/include/libwebsockets/lws-dsh.h \
- I:/msys64/ucrt64/include/libwebsockets/lws-service.h \
- I:/msys64/ucrt64/include/libwebsockets/lws-write.h \
- I:/msys64/ucrt64/include/libwebsockets/lws-writeable.h \
- I:/msys64/ucrt64/include/libwebsockets/lws-ring.h \
- I:/msys64/ucrt64/include/libwebsockets/lws-sha1-base64.h \
- I:/msys64/ucrt64/include/libwebsockets/lws-x509.h \
- I:/msys64/ucrt64/include/libwebsockets/lws-cgi.h \
- I:/msys64/ucrt64/include/libwebsockets/lws-vfs.h \
- I:/msys64/ucrt64/include/libwebsockets/lws-gencrypto.h \
- I:/msys64/ucrt64/include/libwebsockets/lws-lejp.h \
- I:/msys64/ucrt64/include/libwebsockets/lws-lecp.h \
- I:/msys64/ucrt64/include/libwebsockets/lws-cose.h \
- I:/msys64/ucrt64/include/libwebsockets/lws-struct.h \
- I:/msys64/ucrt64/include/libwebsockets/lws-threadpool.h \
- I:/msys64/ucrt64/include/libwebsockets/lws-tokenize.h \
- I:/msys64/ucrt64/include/libwebsockets/lws-lwsac.h \
- I:/msys64/ucrt64/include/libwebsockets/lws-fts.h \
- I:/msys64/ucrt64/include/libwebsockets/lws-diskcache.h \
- I:/msys64/ucrt64/include/libwebsockets/lws-secure-streams.h \
- I:/msys64/ucrt64/include/libwebsockets/lws-secure-streams-serialization.h \
- I:/msys64/ucrt64/include/libwebsockets/lws-secure-streams-policy.h \
- I:/msys64/ucrt64/include/libwebsockets/lws-secure-streams-client.h \
- I:/msys64/ucrt64/include/libwebsockets/lws-secure-streams-transport-proxy.h \
- I:/msys64/ucrt64/include/libwebsockets/lws-jrpc.h \
- I:/msys64/ucrt64/include/libwebsockets/lws-async-dns.h \
- I:/msys64/ucrt64/include/libwebsockets/lws-tls-sessions.h \
- I:/msys64/ucrt64/include/libwebsockets/lws-genhash.h \
- I:/msys64/ucrt64/include/libwebsockets/lws-genrsa.h \
- I:/msys64/ucrt64/include/libwebsockets/lws-genaes.h \
- I:/msys64/ucrt64/include/libwebsockets/lws-genec.h \
- I:/msys64/ucrt64/include/libwebsockets/lws-jwk.h \
- I:/msys64/ucrt64/include/libwebsockets/lws-jose.h \
- I:/msys64/ucrt64/include/libwebsockets/lws-jws.h \
- I:/msys64/ucrt64/include/libwebsockets/lws-jwe.h \
- I:/msys64/ucrt64/include/libwebsockets/lws-eventlib-exports.h \
- I:/msys64/ucrt64/include/libwebsockets/lws-i2c.h \
- I:/msys64/ucrt64/include/libwebsockets/lws-spi.h \
- I:/msys64/ucrt64/include/libwebsockets/lws-gpio.h \
- I:/msys64/ucrt64/include/libwebsockets/lws-bb-i2c.h \
- I:/msys64/ucrt64/include/libwebsockets/lws-bb-spi.h \
- I:/msys64/ucrt64/include/libwebsockets/lws-button.h \
- I:/msys64/ucrt64/include/libwebsockets/lws-led.h \
- I:/msys64/ucrt64/include/libwebsockets/lws-pwm.h \
- I:/msys64/ucrt64/include/libwebsockets/lws-upng.h \
- I:/msys64/ucrt64/include/libwebsockets/lws-jpeg.h \
- I:/msys64/ucrt64/include/libwebsockets/lws-display.h \
- I:/msys64/ucrt64/include/libwebsockets/lws-dlo.h \
- I:/msys64/ucrt64/include/libwebsockets/lws-ssd1306-i2c.h \
- I:/msys64/ucrt64/include/libwebsockets/lws-ili9341-spi.h \
- I:/msys64/ucrt64/include/libwebsockets/lws-spd1656-spi.h \
- I:/msys64/ucrt64/include/libwebsockets/lws-uc8176-spi.h \
- I:/msys64/ucrt64/include/libwebsockets/lws-ssd1675b-spi.h \
- I:/msys64/ucrt64/include/libwebsockets/lws-settings.h \
- I:/msys64/ucrt64/include/libwebsockets/lws-netdev.h \
- I:/msys64/ucrt64/include/libwebsockets/lws-html.h \
- I:/msys64/ucrt64/include/c++/15.2.0/sstream \
- I:/msys64/ucrt64/include/c++/15.2.0/istream \
+ I:/msys64/ucrt64/include/mstcpip.h \
+ I:/msys64/ucrt64/include/c++/15.2.0/iostream \
+ I:/msys64/ucrt64/include/c++/15.2.0/ostream \
+ I:/msys64/ucrt64/include/c++/15.2.0/bits/ostream.h \
  I:/msys64/ucrt64/include/c++/15.2.0/ios \
  I:/msys64/ucrt64/include/c++/15.2.0/exception \
  I:/msys64/ucrt64/include/c++/15.2.0/bits/exception_ptr.h \
@@ -515,10 +394,11 @@ CMakeFiles/sdl_websocket_renderer.dir/src/websocket_server.cpp.obj: \
  I:/msys64/ucrt64/include/c++/15.2.0/x86_64-w64-mingw32/bits/ctype_inline.h \
  I:/msys64/ucrt64/include/c++/15.2.0/bits/locale_facets.tcc \
  I:/msys64/ucrt64/include/c++/15.2.0/bits/basic_ios.tcc \
- I:/msys64/ucrt64/include/c++/15.2.0/ostream \
- I:/msys64/ucrt64/include/c++/15.2.0/bits/ostream.h \
  I:/msys64/ucrt64/include/c++/15.2.0/bits/ostream.tcc \
+ I:/msys64/ucrt64/include/c++/15.2.0/istream \
  I:/msys64/ucrt64/include/c++/15.2.0/bits/istream.tcc \
+ I:/msys64/ucrt64/include/c++/15.2.0/cstring \
+ I:/msys64/ucrt64/include/c++/15.2.0/sstream \
  I:/msys64/ucrt64/include/c++/15.2.0/bits/sstream.tcc \
  I:/msys64/ucrt64/include/c++/15.2.0/iomanip \
  I:/msys64/ucrt64/include/c++/15.2.0/locale \
@@ -529,12 +409,21 @@ CMakeFiles/sdl_websocket_renderer.dir/src/websocket_server.cpp.obj: \
  I:/msys64/ucrt64/include/c++/15.2.0/bits/locale_facets_nonio.tcc \
  I:/msys64/ucrt64/include/c++/15.2.0/bits/locale_conv.h \
  I:/msys64/ucrt64/include/c++/15.2.0/bits/quoted_string.h \
- I:/msys64/ucrt64/include/c++/15.2.0/cstring \
- I:/msys64/ucrt64/include/c++/15.2.0/iostream \
  I:/msys64/ucrt64/include/c++/15.2.0/algorithm \
  I:/msys64/ucrt64/include/c++/15.2.0/bits/stl_algo.h \
  I:/msys64/ucrt64/include/c++/15.2.0/bits/algorithmfwd.h \
  I:/msys64/ucrt64/include/c++/15.2.0/bits/uniform_int_dist.h \
  I:/msys64/ucrt64/include/c++/15.2.0/bits/stl_tempbuf.h \
  I:/msys64/ucrt64/include/c++/15.2.0/pstl/glue_algorithm_defs.h \
- I:/msys64/ucrt64/include/c++/15.2.0/pstl/execution_defs.h
+ I:/msys64/ucrt64/include/c++/15.2.0/pstl/execution_defs.h \
+ I:/msys64/ucrt64/include/c++/15.2.0/memory \
+ I:/msys64/ucrt64/include/c++/15.2.0/bits/stl_raw_storage_iter.h \
+ I:/msys64/ucrt64/include/c++/15.2.0/bits/align.h \
+ I:/msys64/ucrt64/include/c++/15.2.0/bits/shared_ptr.h \
+ I:/msys64/ucrt64/include/c++/15.2.0/bits/shared_ptr_base.h \
+ I:/msys64/ucrt64/include/c++/15.2.0/bits/allocated_ptr.h \
+ I:/msys64/ucrt64/include/c++/15.2.0/ext/aligned_buffer.h \
+ I:/msys64/ucrt64/include/c++/15.2.0/ext/concurrence.h \
+ I:/msys64/ucrt64/include/c++/15.2.0/bits/shared_ptr_atomic.h \
+ I:/msys64/ucrt64/include/c++/15.2.0/backward/auto_ptr.h \
+ I:/msys64/ucrt64/include/c++/15.2.0/pstl/glue_memory_defs.h

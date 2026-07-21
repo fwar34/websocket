@@ -13,23 +13,20 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
 find_package(SDL2 REQUIRED)
 
-set(LWS_INCLUDE_DIR "I:/msys64/ucrt64/include")
-set(LWS_LIB_DIR "I:/msys64/ucrt64/lib")
-
 include_directories(${SDL2_INCLUDE_DIRS})
-include_directories(${LWS_INCLUDE_DIR})
-
-link_directories(${LWS_LIB_DIR})
+include_directories(${PROJECT_SOURCE_DIR}/src)
 
 add_executable(sdl_websocket_renderer
     src/main.cpp
     src/websocket_server.cpp
     src/websocket_server.h
+    src/utils/sha1.c
+    src/utils/base64.c
 )
 
 target_link_libraries(sdl_websocket_renderer
     ${SDL2_LIBRARIES}
-    websockets
+    ws2_32
 )
 
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
