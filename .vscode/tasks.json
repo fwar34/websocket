@@ -1,0 +1,124 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "cmake: configure debug",
+            "type": "shell",
+            "command": "cmake",
+            "args": [
+                "-G", "MinGW Makefiles",
+                "-DCMAKE_BUILD_TYPE=Debug",
+                ".."
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/build"
+            },
+            "group": "build",
+            "problemMatcher": [],
+            "detail": "Configure CMake for Debug build"
+        },
+        {
+            "label": "cmake: configure release",
+            "type": "shell",
+            "command": "cmake",
+            "args": [
+                "-G", "MinGW Makefiles",
+                "-DCMAKE_BUILD_TYPE=Release",
+                ".."
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/build"
+            },
+            "group": "build",
+            "problemMatcher": [],
+            "detail": "Configure CMake for Release build"
+        },
+        {
+            "label": "build debug",
+            "type": "shell",
+            "command": "mingw32-make",
+            "args": [],
+            "options": {
+                "cwd": "${workspaceFolder}/build"
+            },
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "dependsOn": "cmake: configure debug",
+            "problemMatcher": {
+                "owner": "cpp",
+                "fileLocation": "absolute",
+                "pattern": {
+                    "regexp": "^(.*?)(\\((\\d+),(\\d+)\\))?:\\s+(error|warning):\\s+(.*)$",
+                    "file": 1,
+                    "line": 3,
+                    "column": 4,
+                    "severity": 5,
+                    "message": 6
+                }
+            },
+            "detail": "Build Debug configuration"
+        },
+        {
+            "label": "build release",
+            "type": "shell",
+            "command": "mingw32-make",
+            "args": [],
+            "options": {
+                "cwd": "${workspaceFolder}/build"
+            },
+            "group": "build",
+            "dependsOn": "cmake: configure release",
+            "problemMatcher": {
+                "owner": "cpp",
+                "fileLocation": "absolute",
+                "pattern": {
+                    "regexp": "^(.*?)(\\((\\d+),(\\d+)\\))?:\\s+(error|warning):\\s+(.*)$",
+                    "file": 1,
+                    "line": 3,
+                    "column": 4,
+                    "severity": 5,
+                    "message": 6
+                }
+            },
+            "detail": "Build Release configuration"
+        },
+        {
+            "label": "clean",
+            "type": "shell",
+            "command": "mingw32-make",
+            "args": ["clean"],
+            "options": {
+                "cwd": "${workspaceFolder}/build"
+            },
+            "group": "build",
+            "problemMatcher": [],
+            "detail": "Clean build artifacts"
+        },
+        {
+            "label": "rebuild debug",
+            "type": "shell",
+            "command": "mingw32-make",
+            "args": [],
+            "options": {
+                "cwd": "${workspaceFolder}/build"
+            },
+            "group": "build",
+            "dependsOn": ["clean", "cmake: configure debug"],
+            "problemMatcher": {
+                "owner": "cpp",
+                "fileLocation": "absolute",
+                "pattern": {
+                    "regexp": "^(.*?)(\\((\\d+),(\\d+)\\))?:\\s+(error|warning):\\s+(.*)$",
+                    "file": 1,
+                    "line": 3,
+                    "column": 4,
+                    "severity": 5,
+                    "message": 6
+                }
+            },
+            "detail": "Rebuild Debug configuration"
+        }
+    ]
+}

@@ -1,0 +1,3 @@
+H:/websocket/build/CMakeFiles/sdl_websocket_renderer.dir
+H:/websocket/build/CMakeFiles/edit_cache.dir
+H:/websocket/build/CMakeFiles/rebuild_cache.dir

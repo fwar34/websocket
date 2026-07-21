@@ -1,0 +1,19 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Debug SDL WebSocket Renderer",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/sdl_websocket_renderer.exe",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}/build",
+            "environment": [],
+            "externalConsole": true,
+            "preLaunchTask": "build debug",
+            "MIMode": "gdb",
+            "miDebuggerPath": "gdb.exe"
+        }
+    ]
+}
