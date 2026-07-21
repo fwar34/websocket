@@ -252,22 +252,42 @@ CMakeFiles/sdl_websocket_renderer.dir/src/main.cpp.obj: \
  I:/msys64/ucrt64/include/SDL2/SDL_version.h \
  I:/msys64/ucrt64/include/SDL2/SDL_locale.h \
  I:/msys64/ucrt64/include/SDL2/SDL_misc.h \
+ I:/msys64/ucrt64/include/c++/15.2.0/map \
+ I:/msys64/ucrt64/include/c++/15.2.0/bits/stl_tree.h \
+ I:/msys64/ucrt64/include/c++/15.2.0/bits/allocator.h \
+ I:/msys64/ucrt64/include/c++/15.2.0/x86_64-w64-mingw32/bits/c++allocator.h \
+ I:/msys64/ucrt64/include/c++/15.2.0/bits/new_allocator.h \
+ I:/msys64/ucrt64/include/c++/15.2.0/new \
+ I:/msys64/ucrt64/include/c++/15.2.0/bits/exception.h \
+ I:/msys64/ucrt64/include/c++/15.2.0/bits/memoryfwd.h \
+ I:/msys64/ucrt64/include/c++/15.2.0/bits/stl_function.h \
+ I:/msys64/ucrt64/include/c++/15.2.0/backward/binders.h \
+ I:/msys64/ucrt64/include/c++/15.2.0/ext/alloc_traits.h \
+ I:/msys64/ucrt64/include/c++/15.2.0/bits/alloc_traits.h \
+ I:/msys64/ucrt64/include/c++/15.2.0/bits/stl_construct.h \
+ I:/msys64/ucrt64/include/c++/15.2.0/ext/aligned_buffer.h \
+ I:/msys64/ucrt64/include/c++/15.2.0/bits/node_handle.h \
+ I:/msys64/ucrt64/include/c++/15.2.0/bits/stl_map.h \
+ I:/msys64/ucrt64/include/c++/15.2.0/initializer_list \
+ I:/msys64/ucrt64/include/c++/15.2.0/tuple \
+ I:/msys64/ucrt64/include/c++/15.2.0/bits/uses_allocator.h \
+ I:/msys64/ucrt64/include/c++/15.2.0/bits/invoke.h \
+ I:/msys64/ucrt64/include/c++/15.2.0/bits/stl_multimap.h \
+ I:/msys64/ucrt64/include/c++/15.2.0/bits/range_access.h \
+ I:/msys64/ucrt64/include/c++/15.2.0/bits/erase_if.h \
+ I:/msys64/ucrt64/include/c++/15.2.0/bits/memory_resource.h \
+ I:/msys64/ucrt64/include/c++/15.2.0/cstddef \
+ I:/msys64/ucrt64/include/c++/15.2.0/bits/uses_allocator_args.h \
  H:\websocket\src\websocket_server.h \
  I:/msys64/ucrt64/include/c++/15.2.0/thread \
  I:/msys64/ucrt64/include/c++/15.2.0/bits/std_thread.h \
  I:/msys64/ucrt64/include/c++/15.2.0/iosfwd \
  I:/msys64/ucrt64/include/c++/15.2.0/bits/stringfwd.h \
- I:/msys64/ucrt64/include/c++/15.2.0/bits/memoryfwd.h \
  I:/msys64/ucrt64/include/c++/15.2.0/bits/postypes.h \
  I:/msys64/ucrt64/include/c++/15.2.0/cwchar \
- I:/msys64/ucrt64/include/c++/15.2.0/tuple \
- I:/msys64/ucrt64/include/c++/15.2.0/bits/uses_allocator.h \
- I:/msys64/ucrt64/include/c++/15.2.0/bits/invoke.h \
  I:/msys64/ucrt64/include/c++/15.2.0/bits/functional_hash.h \
  I:/msys64/ucrt64/include/c++/15.2.0/bits/hash_bytes.h \
  I:/msys64/ucrt64/include/c++/15.2.0/bits/refwrap.h \
- I:/msys64/ucrt64/include/c++/15.2.0/bits/stl_function.h \
- I:/msys64/ucrt64/include/c++/15.2.0/backward/binders.h \
  I:/msys64/ucrt64/include/c++/15.2.0/bits/unique_ptr.h \
  I:/msys64/ucrt64/include/c++/15.2.0/x86_64-w64-mingw32/bits/gthr.h \
  I:/msys64/ucrt64/include/c++/15.2.0/x86_64-w64-mingw32/bits/gthr-default.h \
@@ -295,22 +315,9 @@ CMakeFiles/sdl_websocket_renderer.dir/src/main.cpp.obj: \
  I:/msys64/ucrt64/include/c++/15.2.0/x86_64-w64-mingw32/bits/atomic_word.h \
  I:/msys64/ucrt64/include/c++/15.2.0/queue \
  I:/msys64/ucrt64/include/c++/15.2.0/deque \
- I:/msys64/ucrt64/include/c++/15.2.0/bits/allocator.h \
- I:/msys64/ucrt64/include/c++/15.2.0/x86_64-w64-mingw32/bits/c++allocator.h \
- I:/msys64/ucrt64/include/c++/15.2.0/bits/new_allocator.h \
- I:/msys64/ucrt64/include/c++/15.2.0/new \
- I:/msys64/ucrt64/include/c++/15.2.0/bits/exception.h \
- I:/msys64/ucrt64/include/c++/15.2.0/bits/stl_construct.h \
  I:/msys64/ucrt64/include/c++/15.2.0/bits/stl_uninitialized.h \
- I:/msys64/ucrt64/include/c++/15.2.0/ext/alloc_traits.h \
- I:/msys64/ucrt64/include/c++/15.2.0/bits/alloc_traits.h \
  I:/msys64/ucrt64/include/c++/15.2.0/bits/stl_deque.h \
- I:/msys64/ucrt64/include/c++/15.2.0/initializer_list \
- I:/msys64/ucrt64/include/c++/15.2.0/bits/range_access.h \
  I:/msys64/ucrt64/include/c++/15.2.0/bits/deque.tcc \
- I:/msys64/ucrt64/include/c++/15.2.0/bits/memory_resource.h \
- I:/msys64/ucrt64/include/c++/15.2.0/cstddef \
- I:/msys64/ucrt64/include/c++/15.2.0/bits/uses_allocator_args.h \
  I:/msys64/ucrt64/include/c++/15.2.0/vector \
  I:/msys64/ucrt64/include/c++/15.2.0/bits/stl_vector.h \
  I:/msys64/ucrt64/include/c++/15.2.0/bits/stl_bvector.h \

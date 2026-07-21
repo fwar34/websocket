@@ -1,5 +1,6 @@
 #include <SDL2/SDL.h>
 #include <cmath>
+#include <map>
 #include "websocket_server.h"
 
 const int SCREEN_WIDTH = 640;
@@ -34,6 +35,8 @@ int main(int, char*[]) {
     float rotation = 0.0f;
     float scale = 1.0f;
 
+    std::map<int, bool> ws_keys;
+
     bool running = true;
     SDL_Event e;
 
@@ -46,30 +49,23 @@ int main(int, char*[]) {
 
         const Uint8* keystate = SDL_GetKeyboardState(nullptr);
 
-        if (keystate[SDL_SCANCODE_W]) posY -= 5.0f;
-        if (keystate[SDL_SCANCODE_S]) posY += 5.0f;
-        if (keystate[SDL_SCANCODE_A]) posX -= 5.0f;
-        if (keystate[SDL_SCANCODE_D]) posX += 5.0f;
-        if (keystate[SDL_SCANCODE_Q]) rotation -= 0.05f;
-        if (keystate[SDL_SCANCODE_E]) rotation += 0.05f;
-        if (keystate[SDL_SCANCODE_R]) scale += 0.02f;
-        if (keystate[SDL_SCANCODE_F]) scale = fmax(0.1f, scale - 0.02f);
-
         while (ws_server.has_events()) {
             Event event = ws_server.get_event();
             if (event.type == "keydown") {
-                switch (event.keycode) {
-                    case 87: posY -= 5.0f; break;
-                    case 83: posY += 5.0f; break;
-                    case 65: posX -= 5.0f; break;
-                    case 68: posX += 5.0f; break;
-                    case 81: rotation -= 0.05f; break;
-                    case 69: rotation += 0.05f; break;
-                    case 82: scale += 0.02f; break;
-                    case 70: scale = fmax(0.1f, scale - 0.02f); break;
-                }
+                ws_keys[event.keycode] = true;
+            } else if (event.type == "keyup") {
+                ws_keys[event.keycode] = false;
             }
         }
+
+        if (keystate[SDL_SCANCODE_W] || ws_keys[87]) posY -= 5.0f;
+        if (keystate[SDL_SCANCODE_S] || ws_keys[83]) posY += 5.0f;
+        if (keystate[SDL_SCANCODE_A] || ws_keys[65]) posX -= 5.0f;
+        if (keystate[SDL_SCANCODE_D] || ws_keys[68]) posX += 5.0f;
+        if (keystate[SDL_SCANCODE_Q] || ws_keys[81]) rotation -= 0.05f;
+        if (keystate[SDL_SCANCODE_E] || ws_keys[69]) rotation += 0.05f;
+        if (keystate[SDL_SCANCODE_R] || ws_keys[82]) scale += 0.02f;
+        if (keystate[SDL_SCANCODE_F] || ws_keys[70]) scale = fmax(0.1f, scale - 0.02f);
 
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
         SDL_RenderClear(renderer);
@@ -106,7 +102,7 @@ int main(int, char*[]) {
             SDL_UnlockTexture(texture);
         }
 
-        SDL_Delay(16);
+        SDL_Delay(8);
     }
 
     SDL_DestroyTexture(texture);
