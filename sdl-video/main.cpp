@@ -2,6 +2,24 @@
  * @file main.cpp
  * @brief SDL2 红色正方形渲染程序 — 支持本地键鼠和浏览器远程控制
  * 
+ * 本文件是 UI 主线程的入口，负责 SDL 渲染和事件处理。
+ * 完整的系统框架图、WebSocket 协议说明和线程模型详见 websocket_server.h。
+ *
+ * 主线程与 WebSocket 服务器的交互方式：
+ *
+ *   ┌─ main.cpp (主线程) ──────────────────────────────────────┐
+ *   │                                                          │
+ *   │   WebSocketServer ws(8080);  ws.start();  ← 启动服务器    │
+ *   │                                                          │
+ *   │   while (running) {                                      │
+ *   │     SDL_PollEvent()  ← 拾取 client_thread 注入的 SDL 事件  │
+ *   │     keystate = SDL_GetKeyboardState()  ← 本地键盘状态      │
+ *   │     渲染 → RenderReadPixels → ws.send_framebuffer()       │
+ *   │   }                                                      │
+ *   │                                                          │
+ *   │   ws.stop();  ← 停止服务器，等待所有线程退出               │
+ *   └──────────────────────────────────────────────────────────┘
+ *
  * 主循环流程：
  * 1. 初始化 SDL 视频子系统，创建窗口、渲染器、纹理
  * 2. 启动 WebSocket 服务器（独立线程，处理浏览器连接）
@@ -102,9 +120,12 @@ int main(int, char*[]) {
 
         int size = (int)(SQUARE_SIZE * scale);
 
+        // 旋转矩阵：将正方形四个顶点绕中心 (posX, posY) 旋转
+        // [x'] = [cos -sin] [dx]     [y'] = [sin  cos] [dy]
         float cosRot = cos(rotation);
         float sinRot = sin(rotation);
 
+        // 计算旋转后的四个顶点（左上、右上、右下、左下）
         SDL_Point points[4];
         points[0] = { (int)(posX + (-size / 2) * cosRot - (-size / 2) * sinRot),
                       (int)(posY + (-size / 2) * sinRot + (-size / 2) * cosRot) };
@@ -115,6 +136,7 @@ int main(int, char*[]) {
         points[3] = { (int)(posX + (-size / 2) * cosRot - (size / 2) * sinRot),
                       (int)(posY + (-size / 2) * sinRot + (size / 2) * cosRot) };
 
+        // 依次连接四个顶点绘制正方形边框
         SDL_RenderDrawLine(renderer, points[0].x, points[0].y, points[1].x, points[1].y);
         SDL_RenderDrawLine(renderer, points[1].x, points[1].y, points[2].x, points[2].y);
         SDL_RenderDrawLine(renderer, points[2].x, points[2].y, points[3].x, points[3].y);
@@ -122,7 +144,8 @@ int main(int, char*[]) {
 
         SDL_RenderPresent(renderer);
 
-        // 读取当前渲染像素并发送给浏览器
+        // 读取渲染器像素并通过 WebSocket 发送给浏览器
+        // 使用 STREAMING 纹理作为中间缓冲，RenderReadPixels 读取后拷贝到纹理
         void* pixels;
         int pitch;
         if (SDL_LockTexture(texture, nullptr, &pixels, &pitch) == 0) {
@@ -131,6 +154,7 @@ int main(int, char*[]) {
             SDL_UnlockTexture(texture);
         }
 
+        // 延时控制帧率（~120 FPS）
         SDL_Delay(8);
     }
 

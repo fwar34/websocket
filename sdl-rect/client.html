@@ -1,10 +1,27 @@
 <!DOCTYPE html>
+<!--
+  @file client.html
+  @brief WebSocket SDL 渲染器前端页面
+
+  功能：
+  1. 通过 WebSocket 连接 C++ 服务器，接收 ARGB8888 帧数据并渲染到 Canvas
+  2. 捕获浏览器键盘和鼠标事件，以 JSON 格式发送给服务器
+  3. 服务器端将浏览器事件转换为 SDL 事件注入 SDL 事件队列
+
+  通信协议：
+  - 接收：WebSocket 二进制帧（ARGB8888 像素数据）
+  - 发送：WebSocket 文本帧（JSON 格式的输入事件）
+    键盘：{"type":"keydown","keycode":87}
+    鼠标：{"type":"mousemove","x":100,"y":200}
+    按键：{"type":"mousedown","x":100,"y":200,"button":0}
+-->
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <html>
 <head>
     <meta charset="utf-8">
     <title>SDL WebSocket Viewer</title>
     <style>
+        /* 全屏黑色背景，Canvas 居中显示 */
         body {
             margin: 0;
             padding: 0;
@@ -20,50 +37,68 @@
     </style>
 </head>
 <body>
+    <!-- Canvas 用于显示从服务器接收的帧数据 -->
     <canvas id="canvas"></canvas>
     <script>
+        // ===== 初始化 Canvas =====
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
         const width = 640;
         const height = 480;
-        
+
         canvas.width = width;
         canvas.height = height;
-        
+
+        // ===== 建立 WebSocket 连接 =====
+        // 连接地址与当前页面同源（http://localhost:8080 → ws://localhost:8080）
         const ws = new WebSocket('ws://' + window.location.host);
-        
+
+        // 接收二进制数据为 ArrayBuffer（默认为 Blob）
         ws.binaryType = 'arraybuffer';
-        
+
         ws.onopen = function() {
             console.log('Connected to server');
         };
-        
+
+        // ===== 接收帧数据并渲染 =====
+        // 服务器发送的像素格式为 ARGB8888（每像素 4 字节：A, R, G, B）
+        // Canvas ImageData 格式为 RGBA（每像素 4 字节：R, G, B, A）
+        // 因此需要交换 R 和 B 通道
         ws.onmessage = function(event) {
             if (event.data instanceof ArrayBuffer) {
                 const buffer = new Uint8Array(event.data);
                 const imageData = ctx.createImageData(width, height);
-                
+
+                // 逐像素转换 ARGB → RGBA
                 for (let i = 0; i < buffer.length; i += 4) {
-                    imageData.data[i] = buffer[i + 2];
-                    imageData.data[i + 1] = buffer[i + 1];
-                    imageData.data[i + 2] = buffer[i];
-                    imageData.data[i + 3] = buffer[i + 3];
+                    imageData.data[i]     = buffer[i + 2]; // R ← B (ARGB中B在偏移2)
+                    imageData.data[i + 1] = buffer[i + 1]; // G ← G
+                    imageData.data[i + 2] = buffer[i];     // B ← R (ARGB中R在偏移1)
+                    imageData.data[i + 3] = buffer[i + 3]; // A ← A
                 }
-                
+
+                // 将像素数据绘制到 Canvas
                 ctx.putImageData(imageData, 0, 0);
             }
         };
-        
+
         ws.onclose = function() {
             console.log('Disconnected from server');
         };
-        
+
+        // ===== 发送输入事件给服务器 =====
+        /**
+         * 将事件对象序列化为 JSON 并通过 WebSocket 发送
+         * @param {Object} event - 事件对象（包含 type 和相关字段）
+         */
         function sendEvent(event) {
             if (ws.readyState === WebSocket.OPEN) {
                 ws.send(JSON.stringify(event));
             }
         }
-        
+
+        // ===== 鼠标事件监听（绑定到 Canvas）=====
+        // 坐标需转换为相对于 Canvas 的偏移
         canvas.addEventListener('mousemove', function(e) {
             const rect = canvas.getBoundingClientRect();
             sendEvent({
@@ -72,17 +107,17 @@
                 y: e.clientY - rect.top
             });
         });
-        
+
         canvas.addEventListener('mousedown', function(e) {
             const rect = canvas.getBoundingClientRect();
             sendEvent({
                 type: 'mousedown',
                 x: e.clientX - rect.left,
                 y: e.clientY - rect.top,
-                button: e.button
+                button: e.button  // 0=左键, 1=中键, 2=右键
             });
         });
-        
+
         canvas.addEventListener('mouseup', function(e) {
             const rect = canvas.getBoundingClientRect();
             sendEvent({
@@ -92,14 +127,16 @@
                 button: e.button
             });
         });
-        
+
+        // ===== 键盘事件监听（绑定到 document）=====
+        // keyCode: 字母键 = ASCII 码（A=65, W=87, S=83, D=68, ...）
         document.addEventListener('keydown', function(e) {
             sendEvent({
                 type: 'keydown',
                 keycode: e.keyCode
             });
         });
-        
+
         document.addEventListener('keyup', function(e) {
             sendEvent({
                 type: 'keyup',

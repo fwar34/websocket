@@ -26,10 +26,10 @@
 
 #define HASH_SHA1_FINALSIZE 20
 struct HASH_SHA1_STRUCT {
-    const char seat[104];
-    void (*Format)(struct HASH_SHA1_STRUCT*);
-    void (*Update)(struct HASH_SHA1_STRUCT*, const void*, unsigned int);
-    void (*Final)(struct HASH_SHA1_STRUCT*, unsigned char[HASH_SHA1_FINALSIZE]);
+    const char seat[104];       ///< SHA-1 内部状态缓冲区（魔数+处理状态+缓冲区）
+    void (*Format)(struct HASH_SHA1_STRUCT*);                                         ///< 格式化/重置
+    void (*Update)(struct HASH_SHA1_STRUCT*, const void*, unsigned int);              ///< 增量输入数据
+    void (*Final)(struct HASH_SHA1_STRUCT*, unsigned char[HASH_SHA1_FINALSIZE]);     ///< 输出 20 字节哈希
 };
 extern void HASH_SHA1_INITIALIZE(struct HASH_SHA1_STRUCT*);
 typedef struct HASH_SHA1_STRUCT sha1_t;

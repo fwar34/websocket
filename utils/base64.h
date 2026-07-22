@@ -19,19 +19,19 @@
 #include <stdint.h>
 
 typedef enum {
-    BASE64_Finished = 0,
-    BASE64_InsufficientCaching
+    BASE64_Finished = 0,            ///< 编码完成
+    BASE64_InsufficientCaching      ///< 输出缓冲区不足
 } Base64OnReturn;
 
 typedef struct {
-    char seat[5];
-    const void* data[4];
-    void(*setbuff)(void* struct_this, void*, size_t);
-    void(*setdata)(void* struct_this, const void*, size_t, int isFinal);
-    int (*encode)(void* struct_this);
-    int (*addzero)(void* struct_this);
-    int (*encodeData)(void* struct_this, const void*, size_t, int isFinal);
-    int (*decode)(void* struct_this);
+    char seat[5];                   ///< 内部残留数据缓冲区（不足 3 字节的部分）
+    const void* data[4];            ///< 内部指针（输入位置、输出位置等）
+    void(*setbuff)(void* struct_this, void*, size_t);                          ///< 设置输出缓冲区
+    void(*setdata)(void* struct_this, const void*, size_t, int isFinal);       ///< 设置输入数据
+    int (*encode)(void* struct_this);                                         ///< 执行编码
+    int (*addzero)(void* struct_this);                                        ///< 添加 '\0' 结尾
+    int (*encodeData)(void* struct_this, const void*, size_t, int isFinal);    ///< 设置数据并编码（便捷接口）
+    int (*decode)(void* struct_this);                                         ///< 执行解码
 } Base64Handle;
 
 #define Base64Size(_b64, _buf)  ( (const char*)_b64.data[2] - (const char*)_buf )

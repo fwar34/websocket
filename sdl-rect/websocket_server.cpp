@@ -10,10 +10,18 @@
  * 3. 客户端事件 → SDL 事件：将浏览器 JSON 事件转换为 SDL_Event 并通过 SDL_PushEvent 注入
  * 4. 帧数据广播：将渲染帧以二进制帧形式发送给所有客户端
  * 
- * 线程模型：
- * - 主线程（UI）：运行 SDL 事件循环和渲染
- * - 服务器线程：监听端口，接受新连接
- * - 客户端线程：每个客户端独立处理握手、收发数据
+ * 完整的系统框架图、WebSocket 协议帧格式说明和线程模型详见 websocket_server.h。
+ * 
+ * 线程模型概要：
+ * - 主线程（UI）：运行 SDL 事件循环和渲染，调用 send_framebuffer() 推送帧数据
+ * - 服务器线程：listen + accept，为每个新连接创建 client_thread
+ * - 客户端线程（N个）：握手 → 帧解析 → SDL_PushEvent 注入事件 → 帧广播
+ * 
+ * 线程同步：
+ * - framebuffer_mutex_：保护 framebuffer_（主线程写，客户端线程读）
+ * - clients_mutex_：保护 clients 列表（服务器线程写，客户端线程读写）
+ * - SDL_PushEvent()：SDL 内部线程安全，可跨线程调用
+ * - running_：atomic<bool>，所有线程检查此标志决定是否退出
  */
 
 #include "websocket_server.h"
@@ -40,27 +48,40 @@ namespace {
 
 /**
  * @brief 客户端连接状态
+ * 
+ * 每个 WebSocket 连接对应一个 WebSocketClient 实例，
+ * 由 shared_ptr 管理生命周期，在服务器主线程和客户端线程间共享。
  */
 struct WebSocketClient {
-    SOCKET sock;
-    bool handshake_done;
-    bool connected;
+    SOCKET sock;               ///< 客户端套接字描述符
+    bool handshake_done;       ///< WebSocket 握手是否已完成
+    bool connected;             ///< 连接是否活跃（false 时线程将退出）
     
     WebSocketClient(SOCKET s) : sock(s), handshake_done(false), connected(true) {}
 };
 
+/**
+ * @brief 全局服务器共享状态
+ * 
+ * 服务器主线程、客户端线程和主线程（UI）通过此结构体共享数据：
+ * - framebuffer：主线程写入帧数据，客户端线程读取并广播
+ * - clients：服务器线程添加新客户端，客户端线程退出时移除自身
+ * - running：全局运行标志，false 时所有线程退出
+ * 
+ * 所有共享字段通过对应的互斥锁保护。
+ */
 struct ServerState {
-    std::mutex framebuffer_mutex;
-    std::vector<uint8_t> framebuffer;
-    int frame_width;
-    int frame_height;
-    int frame_pitch;
-    bool new_frame;
+    std::mutex framebuffer_mutex;           ///< 帧缓冲区互斥锁（保护 framebuffer 等字段）
+    std::vector<uint8_t> framebuffer;       ///< 当前帧像素数据（ARGB8888）
+    int frame_width;                         ///< 帧宽度（像素）
+    int frame_height;                        ///< 帧高度（像素）
+    int frame_pitch;                         ///< 每行字节数
+    bool new_frame;                          ///< 是否有新帧待发送
     
-    std::mutex clients_mutex;
-    std::vector<std::shared_ptr<WebSocketClient>> clients;
+    std::mutex clients_mutex;               ///< 客户端列表互斥锁
+    std::vector<std::shared_ptr<WebSocketClient>> clients;  ///< 所有活跃客户端
     
-    std::atomic<bool> running;
+    std::atomic<bool> running;              ///< 全局运行标志
 };
 
 /**
@@ -179,6 +200,15 @@ std::string compute_accept_key(const std::string& key) {
     return base64_encode(hash);
 }
 
+/**
+ * @brief 从 HTTP 请求头中解析指定字段的值
+ * 
+ * 在 "Header-Name: value\r\n" 格式中查找并提取 value。
+ * 
+ * @param request HTTP 请求头字符串（包含多行 \r\n 分隔的头部字段）
+ * @param header_name 要查找的头部字段名（如 "Sec-WebSocket-Key"）
+ * @return 字段值字符串，未找到返回空字符串
+ */
 std::string parse_header(const std::string& request, const std::string& header_name) {
     size_t pos = request.find(header_name + ": ");
     if (pos == std::string::npos) {
@@ -194,6 +224,17 @@ std::string parse_header(const std::string& request, const std::string& header_n
     return request.substr(start, end - start);
 }
 
+/**
+ * @brief 发送 HTTP 响应给客户端
+ * 
+ * 构建标准 HTTP/1.1 响应（状态行 + 头部 + 空行 + 正文），
+ * 用于在握手前向浏览器返回 client.html 页面。
+ * 
+ * @param sock 客户端套接字
+ * @param content 响应正文内容
+ * @param status_code HTTP 状态码（如 200、404）
+ * @param content_type Content-Type（如 "text/html"）
+ */
 void send_http_response(SOCKET sock, const std::string& content, int status_code, const std::string& content_type) {
     std::ostringstream oss;
     oss << "HTTP/1.1 " << status_code << " OK\r\n";
@@ -207,6 +248,19 @@ void send_http_response(SOCKET sock, const std::string& content, int status_code
     send(sock, response.c_str(), response.size(), 0);
 }
 
+/**
+ * @brief 发送一个 WebSocket 数据帧给客户端
+ * 
+ * 按 RFC 6455 帧格式组装并发送：
+ *   - FIN=1（单帧完整消息）
+ *   - 不带掩码（服务端→客户端帧不需要掩码）
+ *   - 根据 payload 长度选择 7bit / 16bit / 64bit 长度编码
+ * 
+ * @param sock 客户端套接字
+ * @param data 载荷数据指针
+ * @param length 载荷长度（字节）
+ * @param opcode 帧类型（0x01=文本, 0x02=二进制, 0x08=关闭, 0x09=Ping, 0x0A=Pong）
+ */
 void send_websocket_frame(SOCKET sock, const uint8_t* data, size_t length, uint8_t opcode) {
     std::vector<uint8_t> frame;
     
@@ -230,6 +284,16 @@ void send_websocket_frame(SOCKET sock, const uint8_t* data, size_t length, uint8
     send(sock, reinterpret_cast<const char*>(frame.data()), frame.size(), 0);
 }
 
+/**
+ * @brief 发送 Pong 帧给客户端
+ * 
+ * 作为对客户端 Ping 帧的响应（RFC 6455 要求）。
+ * Pong 帧的 opcode=0x0A，载荷为 Ping 帧携带的回显数据。
+ * 
+ * @param sock 客户端套接字
+ * @param data Pong 载荷（回显 Ping 的 payload）
+ * @param length 载荷长度
+ */
 void send_pong(SOCKET sock, const uint8_t* data, size_t length) {
     std::vector<uint8_t> frame;
     frame.push_back(0x8A);
@@ -246,6 +310,16 @@ void send_pong(SOCKET sock, const uint8_t* data, size_t length) {
     send(sock, reinterpret_cast<const char*>(frame.data()), frame.size(), 0);
 }
 
+/**
+ * @brief 发送 Close 帧给客户端
+ * 
+ * 用于正常关闭 WebSocket 连接（RFC 6455 第 5.5.1 节）。
+ * Close 帧的 opcode=0x08，载荷前 2 字节为状态码，后面为可选关闭原因。
+ * 
+ * @param sock 客户端套接字
+ * @param code 关闭状态码（如 1000=正常关闭）
+ * @param reason 关闭原因文本（可为空）
+ */
 void send_close(SOCKET sock, uint16_t code, const std::string& reason) {
     std::vector<uint8_t> frame;
     frame.push_back(0x88);
@@ -270,8 +344,10 @@ void send_close(SOCKET sock, uint16_t code, const std::string& reason) {
  * @brief 将浏览器键盘事件转换为 SDL 事件并推入 SDL 事件队列
  * 
  * 通过 SDL_PushEvent（线程安全）将键盘事件注入 SDL 事件循环，
- * 主线程的 SDL_PollEvent 会拾取这些事件，
- * SDL_GetKeyboardState() 也会正确反映按键状态。
+ * 主线程的 SDL_PollEvent 会拾取这些事件。
+ * 
+ * 注意：SDL_PushEvent 注入的事件不会更新 SDL_GetKeyboardState() 返回的键盘状态表，
+ * 因此 main.cpp 中需要额外维护 ws_key_state[] 数组来追踪浏览器按键状态。
  * 
  * @param type 事件类型："keydown" 或 "keyup"
  * @param keycode JS keyCode 值（如 87=W, 65=A）
@@ -695,21 +771,43 @@ void trigger_writeable() {
 
 }
 
+/**
+ * @brief 构造函数，初始化服务器参数
+ * @param port 监听端口号
+ */
 WebSocketServer::WebSocketServer(int port) 
     : port_(port), running_(false),
       frame_width_(0), frame_height_(0), frame_pitch_(0), new_frame_(false) {
 }
 
+/**
+ * @brief 析构函数，自动停止服务器并释放资源
+ */
 WebSocketServer::~WebSocketServer() {
     stop();
 }
 
+/**
+ * @brief 启动 WebSocket 服务器
+ * 
+ * 设置运行标志并创建服务器主线程（server_thread）。
+ * 非阻塞调用，立即返回。
+ */
 void WebSocketServer::start() {
     running_ = true;
     g_server_state.running = true;
     thread_ = std::thread(&WebSocketServer::server_thread, this);
 }
 
+/**
+ * @brief 停止 WebSocket 服务器
+ * 
+ * 1. 清除运行标志，使服务器线程和客户端线程的循环退出
+ * 2. 关闭所有客户端连接（设置 connected=false 并关闭 socket）
+ * 3. 等待服务器主线程结束（join）
+ * 
+ * 必须在 SDL 事件循环退出后调用，以确保 SDL_PushEvent 不再被调用。
+ */
 void WebSocketServer::stop() {
     running_ = false;
     g_server_state.running = false;
@@ -726,6 +824,17 @@ void WebSocketServer::stop() {
     }
 }
 
+/**
+ * @brief 发送当前帧缓冲区到所有已连接客户端
+ * 
+ * 1. 将像素数据拷贝到全局帧缓冲区（加锁）
+ * 2. 调用 trigger_writeable() 遍历所有客户端，以二进制帧广播
+ * 
+ * @param data 像素数据（ARGB8888 格式）
+ * @param width 画面宽度（像素）
+ * @param height 画面高度（像素）
+ * @param pitch 每行字节数
+ */
 void WebSocketServer::send_framebuffer(const uint8_t* data, int width, int height, int pitch) {
     {
         std::lock_guard<std::mutex> lock(g_server_state.framebuffer_mutex);
