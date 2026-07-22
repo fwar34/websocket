@@ -6,10 +6,12 @@
  * 1. 初始化 SDL 视频子系统，创建窗口、渲染器、纹理
  * 2. 启动 WebSocket 服务器（独立线程，处理浏览器连接）
  * 3. 主循环（~120 FPS）：
- *    a. SDL_PollEvent 处理事件（SDL_QUIT 退出）
- *       注：浏览器键鼠事件通过 SDL_PushEvent 注入，
- *          被 SDL_PollEvent 处理后会更新 SDL_GetKeyboardState()
- *    b. 读取键盘状态 SDL_GetKeyboardState()，同时响应本地和浏览器按键
+ *    a. SDL_PollEvent 处理事件：
+ *       - SDL_QUIT 退出
+ *       - SDL_KEYDOWN/SDL_KEYUP 更新 ws_key_state（浏览器按键状态）
+ *         注：SDL_PushEvent 注入的事件不会更新 SDL_GetKeyboardState()，
+ *            因此需手动维护浏览器按键状态表
+ *    b. 读取键盘状态：keystate（本地）|| ws_key_state（浏览器）逻辑或
  *    c. 更新变换参数（平移、旋转、缩放）
  *    d. 绘制红色正方形（使用 SDL 多边形连线方式）
  *    e. 读取帧像素并通过 WebSocket 发送给浏览器
@@ -62,28 +64,36 @@ int main(int, char*[]) {
     bool running = true;
     SDL_Event e;
 
+    // 浏览器按键状态表。
+    // SDL_PushEvent 注入的 SDL_KEYDOWN/SDL_KEYUP 不会更新 SDL_GetKeyboardState()，
+    // 因此需要在此手动维护浏览器端按键的按下/释放状态。
+    // 本地键盘状态由 SDL_GetKeyboardState() 提供，两者逻辑或后统一判断。
+    bool ws_key_state[SDL_NUM_SCANCODES] = {};
+
     while (running) {
         while (SDL_PollEvent(&e) != 0) {
             if (e.type == SDL_QUIT) {
                 running = false;
+            } else if (e.type == SDL_KEYDOWN) {
+                ws_key_state[e.key.keysym.scancode] = true;
+            } else if (e.type == SDL_KEYUP) {
+                ws_key_state[e.key.keysym.scancode] = false;
             }
         }
 
-        // SDL_GetKeyboardState 返回所有按键的当前状态。
-        // 当浏览器端按键时，WebSocket 线程通过 SDL_PushEvent 注入
-        // SDL_KEYDOWN/SDL_KEYUP 事件，这些事件被 SDL_PollEvent 处理后，
-        // SDL 内部会更新键盘状态表，因此此处的 keystate 同时反映
-        // 本地键盘和浏览器远程键盘的状态，实现统一的输入处理。
+        // keystate 反映本地硬件键盘状态；
+        // ws_key_state 反映浏览器远程键盘状态（由 SDL_PushEvent 注入的事件维护）。
+        // 两者逻辑或，使本地和远程按键都能控制矩形。
         const Uint8* keystate = SDL_GetKeyboardState(nullptr);
 
-        if (keystate[SDL_SCANCODE_W]) posY -= 5.0f;
-        if (keystate[SDL_SCANCODE_S]) posY += 5.0f;
-        if (keystate[SDL_SCANCODE_A]) posX -= 5.0f;
-        if (keystate[SDL_SCANCODE_D]) posX += 5.0f;
-        if (keystate[SDL_SCANCODE_Q]) rotation -= 0.05f;
-        if (keystate[SDL_SCANCODE_E]) rotation += 0.05f;
-        if (keystate[SDL_SCANCODE_R]) scale += 0.02f;
-        if (keystate[SDL_SCANCODE_F]) scale = fmax(0.1f, scale - 0.02f);
+        if (keystate[SDL_SCANCODE_W] || ws_key_state[SDL_SCANCODE_W]) posY -= 5.0f;
+        if (keystate[SDL_SCANCODE_S] || ws_key_state[SDL_SCANCODE_S]) posY += 5.0f;
+        if (keystate[SDL_SCANCODE_A] || ws_key_state[SDL_SCANCODE_A]) posX -= 5.0f;
+        if (keystate[SDL_SCANCODE_D] || ws_key_state[SDL_SCANCODE_D]) posX += 5.0f;
+        if (keystate[SDL_SCANCODE_Q] || ws_key_state[SDL_SCANCODE_Q]) rotation -= 0.05f;
+        if (keystate[SDL_SCANCODE_E] || ws_key_state[SDL_SCANCODE_E]) rotation += 0.05f;
+        if (keystate[SDL_SCANCODE_R] || ws_key_state[SDL_SCANCODE_R]) scale += 0.02f;
+        if (keystate[SDL_SCANCODE_F] || ws_key_state[SDL_SCANCODE_F]) scale = fmax(0.1f, scale - 0.02f);
 
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
         SDL_RenderClear(renderer);
