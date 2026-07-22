@@ -1,0 +1,21 @@
+# Build directories
+build/
+sdl-rect/build/
+sdl-video/build/
+
+# Compiled executables
+*.exe
+*.o
+*.obj
+*.a
+*.dll
+
+# CMake generated files
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+compile_commands.json
+
+# IDE specific
+.trae/

@@ -1,3 +1,0 @@
-I:\msys64\ucrt64\bin\cmake.exe -E rm -f CMakeFiles\sdl_video.dir/objects.a
-I:\msys64\ucrt64\bin\ar.exe qc CMakeFiles\sdl_video.dir/objects.a @CMakeFiles\sdl_video.dir\objects1.rsp
-I:\msys64\ucrt64\bin\c++.exe -g -Wl,--whole-archive CMakeFiles\sdl_video.dir/objects.a -Wl,--no-whole-archive -o ..\sdl_video.exe -Wl,--out-implib,libsdl_video.dll.a -Wl,--major-image-version,0,--minor-image-version,0 @CMakeFiles\sdl_video.dir\linkLibs.rsp
