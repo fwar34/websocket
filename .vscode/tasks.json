@@ -6,12 +6,13 @@
             "type": "shell",
             "command": "cmake",
             "args": [
+                "-S", ".",
+                "-B", "build",
                 "-G", "MinGW Makefiles",
-                "-DCMAKE_BUILD_TYPE=Debug",
-                ".."
+                "-DCMAKE_BUILD_TYPE=Debug"
             ],
             "options": {
-                "cwd": "${workspaceFolder}/build"
+                "cwd": "${workspaceFolder}"
             },
             "group": "build",
             "problemMatcher": [],
@@ -22,12 +23,13 @@
             "type": "shell",
             "command": "cmake",
             "args": [
+                "-S", ".",
+                "-B", "build",
                 "-G", "MinGW Makefiles",
-                "-DCMAKE_BUILD_TYPE=Release",
-                ".."
+                "-DCMAKE_BUILD_TYPE=Release"
             ],
             "options": {
-                "cwd": "${workspaceFolder}/build"
+                "cwd": "${workspaceFolder}"
             },
             "group": "build",
             "problemMatcher": [],
@@ -36,16 +38,19 @@
         {
             "label": "build debug",
             "type": "shell",
-            "command": "mingw32-make",
-            "args": [],
+            "command": "cmake",
+            "args": [
+                "--build", "build",
+                "--config", "Debug"
+            ],
             "options": {
-                "cwd": "${workspaceFolder}/build"
+                "cwd": "${workspaceFolder}"
             },
             "group": {
                 "kind": "build",
                 "isDefault": true
             },
-            "dependsOn": "cmake: configure debug",
+            // "dependsOn": "cmake: configure debug",
             "problemMatcher": {
                 "owner": "cpp",
                 "fileLocation": "absolute",
@@ -63,10 +68,13 @@
         {
             "label": "build release",
             "type": "shell",
-            "command": "mingw32-make",
-            "args": [],
+            "command": "cmake",
+            "args": [
+                "--build", "build",
+                "--config", "Release"
+            ],
             "options": {
-                "cwd": "${workspaceFolder}/build"
+                "cwd": "${workspaceFolder}"
             },
             "group": "build",
             "dependsOn": "cmake: configure release",
@@ -87,10 +95,13 @@
         {
             "label": "clean",
             "type": "shell",
-            "command": "mingw32-make",
-            "args": ["clean"],
+            "command": "cmake",
+            "args": [
+                "--build", "build",
+                "--target", "clean"
+            ],
             "options": {
-                "cwd": "${workspaceFolder}/build"
+                "cwd": "${workspaceFolder}"
             },
             "group": "build",
             "problemMatcher": [],
@@ -99,13 +110,17 @@
         {
             "label": "rebuild debug",
             "type": "shell",
-            "command": "mingw32-make",
-            "args": [],
+            "command": "cmake",
+            "args": [
+                "--build", "build",
+                "--config", "Debug",
+                "--clean-first"
+            ],
             "options": {
-                "cwd": "${workspaceFolder}/build"
+                "cwd": "${workspaceFolder}"
             },
             "group": "build",
-            "dependsOn": ["clean", "cmake: configure debug"],
+            "dependsOn": "cmake: configure debug",
             "problemMatcher": {
                 "owner": "cpp",
                 "fileLocation": "absolute",

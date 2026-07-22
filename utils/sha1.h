@@ -1,4 +1,19 @@
-﻿#ifndef __SHA1_H
+/**
+ * @file sha1.h
+ * @brief SHA-1 哈希算法接口（RFC 3174）
+ * 
+ * 本文件定义了 SHA-1 哈希的结构体和接口函数。
+ * 在本项目中用于 WebSocket 握手的 Sec-WebSocket-Accept 计算。
+ * 
+ * 使用方法：
+ *   sha1_t* sha1 = (sha1_t*)malloc(sizeof(sha1_t));
+ *   HASH_SHA1_INITIALIZE(sha1);              // 初始化
+ *   sha1->Update(sha1, data, len);          // 增量输入
+ *   sha1->Final(sha1, hash);                // 输出 20 字节哈希
+ *   free(sha1);
+ */
+
+#ifndef __SHA1_H
 
 #ifndef __FUN_BYTE2HEX
     #define byte2hex(_input, _output1, _output2, _dump) \
