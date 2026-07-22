@@ -12,7 +12,7 @@
  *   │   WebSocketServer ws(8080);  ws.start();  ← 启动服务器    │
  *   │                                                          │
  *   │   while (running) {                                      │
- *   │     SDL_PollEvent()  ← 拾取 client_thread 注入的 SDL 事件  │
+ *   │     SDL_PollEvent()  ← 拾取 worker_thread 注入的 SDL 事件  │
  *   │     keystate = SDL_GetKeyboardState()  ← 本地键盘状态      │
  *   │     渲染 → RenderReadPixels → ws.send_framebuffer()       │
  *   │   }                                                      │

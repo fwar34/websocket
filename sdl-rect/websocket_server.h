@@ -7,7 +7,7 @@
  * - 监听指定端口，接受浏览器 WebSocket 连接
  * - 支持 HTTP 升级握手（Sec-WebSocket-Key / Sec-WebSocket-Accept）
  * - 将浏览器键盘/鼠标事件转换为 SDL 事件（SDL_PushEvent）
- * - 支持多客户端并发连接，每个客户端独立线程处理
+ * - 使用线程池 + select 多路复用，每个 worker 线程监听多个客户端
  * - 将 SDL 渲染帧通过 WebSocket 二进制帧发送给所有已连接客户端
  *
  * ============================================================================
@@ -18,19 +18,22 @@
  *   │   浏览器      │                      │     C++ 进程              │
  *   │  (client.html)│                      │                          │
  *   │              │   HTTP GET /         │  ┌────────────────────┐  │
- *   │  Canvas 渲染  │ ───────────────────→ │  │ WebSocketServer    │  │
- *   │  键鼠事件捕获  │   WebSocket 连接      │  │  (server_thread)   │  │
- *   │              │ ←───────────────────→ │  │  listen + accept   │  │
+ *   │  Canvas 渲染  │ ───────────────────→ │  │ acceptor_thread    │  │
+ *   │  键鼠事件捕获  │   WebSocket 连接      │  │  listen + accept   │  │
+ *   │              │ ←───────────────────→ │  │  轮询分配给 worker  │  │
  *   │              │                      │  └────────┬───────────┘  │
- *   │              │  WS 二进制帧 (帧数据)  │           │ 新连接        │
- *   │              │ ←─────────────────── │  ┌────────▼───────────┐  │
- *   │              │                      │  │ client_thread (N个) │  │
- *   │              │  WS 文本帧 (JSON事件)  │  │  握手 + 帧解析      │  │
- *   │              │ ───────────────────→ │  │  ↓                  │  │
- *   │              │                      │  │  SDL_PushEvent()    │  │
- *   └──────────────┘                      │  └────────┬───────────┘  │
- *                                         │           │ SDL 事件      │
- *                                         │  ┌────────▼───────────┐  │
+ *   │              │  WS 二进制帧 (帧数据)  │     ↓ ↓ ↓ ↓             │
+ *   │              │ ←─────────────────── │  ┌─┬─┬─┬─┐             │
+ *   │              │                      │  │W│W│W│W│ worker 线程池  │
+ *   │              │  WS 文本帧 (JSON事件)  │  │0│1│2│3│ (4个线程)   │
+ *   │              │ ───────────────────→ │  └─┴─┴─┴─┘             │
+ *   │              │                      │  每个 worker:             │
+ *   │              │                      │  select() 多路复用        │
+ *   │              │                      │  监听多个 client socket   │
+ *   │              │                      │  ↓                       │
+ *   │              │                      │  SDL_PushEvent()         │
+ *   │              │                      │  → SDL 事件队列           │
+ *   └──────────────┘                      │  ┌────────────────────┐  │
  *                                         │  │ main() 主线程       │  │
  *                                         │  │  SDL_PollEvent()   │  │
  *                                         │  │  SDL_GetKeyboardState│ │
@@ -40,9 +43,9 @@
  *                                         └──────────────────────────┘
  *
  * 数据流：
- *   浏览器键鼠 → WebSocket JSON → client_thread → SDL_PushEvent → SDL 事件队列
+ *   浏览器键鼠 → WebSocket JSON → worker_thread → SDL_PushEvent → SDL 事件队列
  *   → SDL_PollEvent → ws_key_state[] / keystate → 渲染变换 → RenderReadPixels
- *   → send_framebuffer → WebSocket 二进制帧 → 浏览器 Canvas
+ *   → send_framebuffer → worker_thread 检测新帧 → WebSocket 二进制帧 → 浏览器 Canvas
  *
  * ============================================================================
  * 二、WebSocket 协议（RFC 6455）
@@ -105,7 +108,7 @@
  *                              (button: 0=左键, 1=中键, 2=右键)
  *
  * ============================================================================
- * 三、线程模型
+ * 三、线程模型（线程池 + select 多路复用）
  * ============================================================================
  *
  *   ┌─────────────────────────────────────────────────────────────┐
@@ -119,53 +122,62 @@
  *   │    keystate = SDL_GetKeyboardState()  ← 本地硬件键盘          │
  *   │    if (keystate[W] || ws_key_state[W]) posY -= 5  ← 逻辑或  │
  *   │    SDL_Render*()     ← 渲染                                  │
- *   │    send_framebuffer() ──→ 拷贝到全局 framebuffer (加锁)      │
+ *   │    send_framebuffer() ──→ 更新全局 framebuffer (加锁)       │
  *   │    SDL_Delay(8)      ← 控制帧率                              │
  *   │  }                                                          │
  *   └──────────────────────┬──────────────────────────────────────┘
  *                          │ send_framebuffer()
  *                          ▼
- *   ┌──────────────────────────────────────────────────────────────┐
- *   │              WebSocketServer::server_thread                   │
+ *   ┌─────────────────────────────────────────────────────────────┐
+ *   │              acceptor_thread (1个)                          │
  *   │                                                              │
  *   │  WSAStartup → socket → bind → listen                         │
  *   │  while (running_) {                                          │
  *   │    select(1s超时)                                             │
- *   │    accept() → 创建 WebSocketClient → push 到 clients 列表    │
- *   │    thread(client_thread, client).detach()  ──┐               │
- *   │  }                                           │ 每个连接       │
- *   └──────────────────────────────────────────────┼──────────────┘
- *                                                  │
- *   ┌──────────────────────────────────────────────▼──────────────┐
- *   │            client_thread (每客户端一个，detach)                 │
- *   │                                                              │
- *   │  Phase 1: 握手前                                              │
- *   │    recv() → 检测 "\r\n\r\n" 分隔头部                          │
- *   │    ├─ Upgrade: websocket → 握手（101 响应）                   │
- *   │    └─ 普通 HTTP GET → 返回 client.html → 关闭连接             │
- *   │                                                              │
- *   │  Phase 2: 握手后                                              │
- *   │    recv() → 累积到 receive_buffer                              │
- *   │    while (buffer >= 完整帧大小) {                              │
- *   │      提取一帧 → process_websocket_frame()                      │
- *   │        ├─ 0x01 文本 → parse_events() → SDL_PushEvent()  ←──┐  │
- *   │        ├─ 0x08 关闭 → send_close()                          │  │
- *   │        ├─ 0x09 Ping  → send_pong()                         │  │
- *   │        └─ 0x0A Pong  → 打印日志                              │  │
- *   │    }                                                        │  │
- *   │                                                             │  │
- *   │    trigger_writeable()                                      │  │
- *   │      → 遍历 clients → send_websocket_frame(0x02)            │  │
- *   │      → 从全局 framebuffer 读取帧数据（加锁）                   │  │
- *   │                                                             │  │
- *   │  退出时：从 clients 列表移除自身（加锁），关闭 socket         │  │
- *   └─────────────────────────────────────────────────────────────┘  │
- *                                                                    │
- *   线程同步：                                                       │
- *     g_server_state.framebuffer_mutex → 保护 framebuffer            │
- *     g_server_state.clients_mutex    → 保护 clients 列表             │
- *     SDL_PushEvent()                 → SDL 内部线程安全              │
- *     g_server_state.running          → atomic<bool>，所有线程检查    │
+ *   │    accept() → 创建 WebSocketClient                            │
+ *   │    → 轮询分配给 worker[next_worker % POOL_SIZE]              │
+ *   │    → 通知 worker 有新客户端 (condition_variable)              │
+ *   │  }                                                           │
+ *   └──────────────────────┬──────────────────────────────────────┘
+ *                          │ 分配客户端
+ *     ┌────────────────────┼────────────────────┐
+ *     ▼                    ▼                    ▼
+ *   ┌────────────┐  ┌────────────┐  ┌────────────┐
+ *   │ worker[0]  │  │ worker[1]  │  │ worker[N]  │  (POOL_SIZE=4)
+ *   │            │  │            │  │            │
+ *   │ select()   │  │ select()   │  │ select()   │
+ *   │ 多路复用    │  │ 多路复用    │  │ 多路复用    │
+ *   │ client 1,2 │  │ client 3,4 │  │ client 5,6 │
+ *   │            │  │            │  │            │
+ *   │ Phase 1: 握手前                        │
+ *   │   recv → 检测 HTTP/WS                  │
+ *   │   ├─ WS 升级 → 101 响应                │
+ *   │   └─ HTTP GET → 返回 client.html       │
+ *   │                                        │
+ *   │ Phase 2: 握手后                        │
+ *   │   recv → 累积 buffer                    │
+ *   │   while (完整帧) {                      │
+ *   │     process_websocket_frame()           │
+ *   │       ├─ 0x01 文本 → parse_events()     │
+ *   │       │             → SDL_PushEvent()   │
+ *   │       ├─ 0x08 关闭 → send_close()      │
+ *   │       ├─ 0x09 Ping  → send_pong()      │
+ *   │       └─ 0x0A Pong  → 打印日志          │
+ *   │   }                                    │
+ *   │                                        │
+ *   │   if (new_frame)                       │
+ *   │     → send_websocket_frame(0x02)       │
+ *   │     → 广播帧数据给自己的客户端            │
+ *   │                                        │
+ *   │   退出时：移除客户端，关闭 socket        │
+ *   └────────────────────────────────────────┘
+ *
+ *   线程同步：
+ *     framebuffer_mutex_   → 保护 framebuffer（主线程写，worker 线程读）
+ *     worker_mutex[i]      → 保护每个 worker 的客户端列表
+ *     worker_cv[i]         → 通知 worker 有新客户端加入
+ *     SDL_PushEvent()      → SDL 内部线程安全，可跨线程调用
+ *     running_             → atomic<bool>，所有线程检查此标志决定是否退出
  *
  * ============================================================================
  */
@@ -175,6 +187,7 @@
 
 #include <thread>
 #include <mutex>
+#include <condition_variable>
 #include <string>
 #include <vector>
 #include <atomic>
@@ -182,9 +195,13 @@
 
 /**
  * @class WebSocketServer
- * @brief WebSocket 服务端封装类
+ * @brief WebSocket 服务端封装类（线程池 + select 多路复用）
  * 
- * 使用 Winsock2 实现，在独立线程中运行主服务器循环。
+ * 使用 Winsock2 实现，采用线程池模型：
+ * - 1 个 acceptor 线程负责接受新连接并轮询分配给 worker
+ * - POOL_SIZE 个 worker 线程，每个 worker 使用 select() 多路复用
+ *   监听多个客户端 socket，处理握手、帧解析和帧广播
+ * 
  * 通过 SDL_PushEvent 将浏览器输入事件注入 SDL 事件队列，
  * 使得浏览器端的键鼠操作能被主线程的 SDL_PollEvent 拾取。
  * 
@@ -214,7 +231,7 @@ public:
     /**
      * @brief 启动 WebSocket 服务器
      * 
-     * 在新线程中启动主监听循环，接受客户端连接。
+     * 创建 1 个 acceptor 线程和 POOL_SIZE 个 worker 线程。
      * 非阻塞调用。
      */
     void start();
@@ -222,7 +239,11 @@ public:
     /**
      * @brief 停止 WebSocket 服务器
      * 
-     * 关闭所有客户端连接，等待服务器线程退出。
+     * 1. 清除运行标志，使所有线程的循环退出
+     * 2. 关闭所有客户端连接
+     * 3. 唤醒所有 worker（notify_all）
+     * 4. 等待所有线程结束（join）
+     * 
      * 必须在 SDL 事件循环退出后调用，以确保 SDL_PushEvent 不再被使用。
      */
     void stop();
@@ -230,8 +251,9 @@ public:
     /**
      * @brief 发送当前帧缓冲区到所有已连接的 WebSocket 客户端
      * 
-     * 将 RGBA 像素数据保存并通过 WebSocket 二进制帧（opcode 0x02）
-     * 广播给所有完成握手的客户端。
+     * 将 ARGB8888 像素数据保存到全局帧缓冲区（加锁），
+     * 设置 new_frame 标志。各 worker 线程在 select 循环中检测到新帧后，
+     * 以 WebSocket 二进制帧（opcode 0x02）广播给自己负责的客户端。
      * 
      * @param data 像素数据（ARGB8888 格式）
      * @param width 画面宽度（像素）
@@ -242,22 +264,41 @@ public:
     
 private:
     /**
-     * @brief 服务器主循环线程函数
+     * @brief acceptor 线程函数
      * 
-     * 使用 select() 多路复用监听端口，接受新连接并分发给独立客户端线程。
+     * 初始化 Winsock，创建监听 socket，进入 accept 循环。
+     * 新连接通过轮询分配给 worker 线程。
      */
-    void server_thread();
+    void acceptor_thread();
     
-    int port_;                          ///< 监听端口
-    std::thread thread_;                ///< 服务器主线程
-    std::atomic<bool> running_;        ///< 运行状态标志
+    /**
+     * @brief worker 线程函数
+     * 
+     * 每个 worker 使用 select() 多路复用监听分配给自己的客户端 socket：
+     * - 握手前：检测 HTTP GET 或 WebSocket 升级请求
+     * - 握手后：解析 WebSocket 帧，转换为 SDL 事件
+     * - 检测到新帧时：广播 framebuffer 给自己的客户端
+     * 
+     * @param worker_id worker 编号（0 ~ POOL_SIZE-1）
+     */
+    void worker_thread(int worker_id);
     
-    std::mutex framebuffer_mutex_;      ///< 帧缓冲区互斥锁
-    std::vector<uint8_t> framebuffer_;  ///< 当前帧数据
-    int frame_width_;                   ///< 帧宽度
-    int frame_height_;                  ///< 帧高度
-    int frame_pitch_;                   ///< 帧行距
-    std::atomic<bool> new_frame_;       ///< 新帧到达标志
+    static constexpr int POOL_SIZE = 4;   ///< 线程池大小
+    
+    int port_;                            ///< 监听端口
+    std::thread acceptor_thread_;         ///< acceptor 线程
+    std::vector<std::thread> workers_;    ///< worker 线程池
+    std::atomic<bool> running_;           ///< 运行状态标志
+    
+    // 帧缓冲区（主线程写，worker 线程读）
+    // 使用 shared_ptr 避免每个 worker 拷贝 1.2MB 帧数据，
+    // worker 只需拷贝 shared_ptr（8 字节），数据共享同一份。
+    std::mutex framebuffer_mutex_;        ///< 帧缓冲区互斥锁
+    std::shared_ptr<const std::vector<uint8_t>> framebuffer_;  ///< 当前帧数据（ARGB8888）
+    int frame_width_;                      ///< 帧宽度
+    int frame_height_;                    ///< 帧高度
+    int frame_pitch_;                     ///< 帧行距
+    std::atomic<uint64_t> frame_version_; ///< 帧版本号（每次 send_framebuffer 递增）
 };
 
 #endif

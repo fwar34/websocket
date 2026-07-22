@@ -12,14 +12,16 @@
  * 
  * 完整的系统框架图、WebSocket 协议帧格式说明和线程模型详见 websocket_server.h。
  * 
- * 线程模型概要：
- * - 主线程（UI）：运行 SDL 事件循环和渲染，调用 send_framebuffer() 推送帧数据
- * - 服务器线程：listen + accept，为每个新连接创建 client_thread
- * - 客户端线程（N个）：握手 → 帧解析 → SDL_PushEvent 注入事件 → 帧广播
+ * 线程池模型概要：
+ * - 主线程（UI）：运行 SDL 事件循环和渲染，调用 send_framebuffer() 更新帧缓冲区
+ * - acceptor 线程（1个）：listen + accept，将新连接轮询分配给 worker
+ * - worker 线程（POOL_SIZE=4个）：每个 worker 使用 select() 多路复用监听
+ *   多个客户端 socket，处理握手、帧解析、事件注入和帧广播
  * 
  * 线程同步：
- * - framebuffer_mutex_：保护 framebuffer_（主线程写，客户端线程读）
- * - clients_mutex_：保护 clients 列表（服务器线程写，客户端线程读写）
+ * - framebuffer_mutex_：保护 framebuffer_（主线程写，worker 线程读）
+ * - worker_mutex[i]：保护每个 worker 的客户端列表（acceptor 写，worker 读写）
+ * - worker_cv[i]：通知 worker 有新客户端加入（acceptor 通知，worker 等待）
  * - SDL_PushEvent()：SDL 内部线程安全，可跨线程调用
  * - running_：atomic<bool>，所有线程检查此标志决定是否退出
  */
@@ -38,11 +40,17 @@ extern "C" {
 #include <iomanip>
 #include <thread>
 #include <mutex>
+#include <condition_variable>
 #include <vector>
 #include <atomic>
 #include <algorithm>
 #include <memory>
-#include <unordered_map>
+#include <chrono>
+
+/**
+ * @brief 线程池大小，与 websocket_server.h 中 POOL_SIZE 保持一致
+ */
+constexpr int POOL_SIZE = 4;
 
 namespace {
 
@@ -50,47 +58,46 @@ namespace {
  * @brief 客户端连接状态
  * 
  * 每个 WebSocket 连接对应一个 WebSocketClient 实例，
- * 由 shared_ptr 管理生命周期，在服务器主线程和客户端线程间共享。
+ * 由 shared_ptr 管理生命周期，在 acceptor 线程和 worker 线程间共享。
  */
 struct WebSocketClient {
     SOCKET sock;               ///< 客户端套接字描述符
     bool handshake_done;       ///< WebSocket 握手是否已完成
-    bool connected;             ///< 连接是否活跃（false 时线程将退出）
+    bool connected;             ///< 连接是否活跃（false 时将被移除）
+    std::string receive_buffer; ///< 接收缓冲区（累积分片数据，直到完整帧）
     
     WebSocketClient(SOCKET s) : sock(s), handshake_done(false), connected(true) {}
 };
 
 /**
- * @brief 全局服务器共享状态
+ * @brief 每个 worker 线程的客户端列表
  * 
- * 服务器主线程、客户端线程和主线程（UI）通过此结构体共享数据：
- * - framebuffer：主线程写入帧数据，客户端线程读取并广播
- * - clients：服务器线程添加新客户端，客户端线程退出时移除自身
- * - running：全局运行标志，false 时所有线程退出
- * 
- * 所有共享字段通过对应的互斥锁保护。
+ * acceptor 线程将新客户端添加到某个 worker 的列表中（加锁），
+ * worker 线程从自己的列表中取出客户端进行 select 多路复用。
+ * 客户端断开时由 worker 线程从列表中移除。
  */
-struct ServerState {
-    std::mutex framebuffer_mutex;           ///< 帧缓冲区互斥锁（保护 framebuffer 等字段）
-    std::vector<uint8_t> framebuffer;       ///< 当前帧像素数据（ARGB8888）
-    int frame_width;                         ///< 帧宽度（像素）
-    int frame_height;                        ///< 帧高度（像素）
-    int frame_pitch;                         ///< 每行字节数
-    bool new_frame;                          ///< 是否有新帧待发送
-    
-    std::mutex clients_mutex;               ///< 客户端列表互斥锁
-    std::vector<std::shared_ptr<WebSocketClient>> clients;  ///< 所有活跃客户端
-    
-    std::atomic<bool> running;              ///< 全局运行标志
+struct WorkerData {
+    std::mutex mutex;                          ///< 保护 clients 列表
+    std::condition_variable cv;                ///< 通知 worker 有新客户端
+    std::vector<std::shared_ptr<WebSocketClient>> clients;  ///< 该 worker 负责的客户端
 };
 
 /**
- * @brief 全局服务器状态（进程内唯一）
+ * @brief 全局 worker 数据数组（POOL_SIZE 个 worker）
  * 
- * 管理所有客户端连接、帧缓冲区和运行状态。
- * 所有客户端线程通过此共享状态与主线程通信。
+ * acceptor 线程通过轮询将新连接分配给各 worker，
+ * 每个 worker 独立使用 select() 多路复用监听自己的客户端。
  */
-ServerState g_server_state;
+WorkerData g_workers[POOL_SIZE];
+
+/**
+ * @brief 下一个分配的 worker 编号（原子变量，轮询调度）
+ */
+std::atomic<int> g_next_worker{0};
+
+// ===========================================================================
+// 协议工具函数（与线程模型无关，纯函数）
+// ===========================================================================
 
 /**
  * @brief JS keyCode → SDL_Scancode 映射
@@ -593,183 +600,136 @@ void process_websocket_frame(SOCKET sock, const std::vector<uint8_t>& frame) {
     }
 }
 
+// ===========================================================================
+// 客户端数据处理（握手 + 帧解析）
+// ===========================================================================
+
 /**
- * @brief 客户端处理线程
+ * @brief 处理客户端接收到的数据
  * 
- * 每个 WebSocket 连接在独立线程中处理：
- * 1. 使用 select() 实现非阻塞/超时读取
- * 2. 首次收到数据时判断是 HTTP 请求还是 WebSocket 升级请求
- *    - HTTP GET "/" → 返回 client.html 页面
- *    - WebSocket 升级握手 → 计算 accept_key 并返回 101 响应
- * 3. 握手完成后，持续解析 WebSocket 数据帧
- *    - 数据帧可能被分片，需要在 receive_buffer 中累积
- *    - 完整帧交给 process_websocket_frame 处理
+ * 根据 handshake_done 状态分发到不同处理阶段：
  * 
- * @param client 客户端连接的智能指针
+ * Phase 1 — 握手前：
+ *   在 receive_buffer 中查找 "\r\n\r\n" 分隔头部，解析后判断：
+ *   - WebSocket 升级请求 → 计算 accept_key，返回 101 响应
+ *   - 普通 HTTP GET → 返回 client.html 页面，然后关闭连接
+ * 
+ * Phase 2 — 握手后：
+ *   循环从 receive_buffer 中提取完整 WebSocket 帧：
+ *   - 先读取帧头（2~10 字节）确定帧大小
+ *   - 若缓冲区中数据不足一帧，等待下次 recv
+ *   - 完整帧交给 process_websocket_frame 处理
+ * 
+ * @param client 客户端连接（包含 receive_buffer 累积的数据）
  */
-void client_thread(std::shared_ptr<WebSocketClient> client) {
-    char buffer[4096];
-    std::string receive_buffer;
-    
-    printf("[WS] Client thread started\n");
-    fflush(stdout);
-    
-    while (client->connected && g_server_state.running) {
-        fd_set read_fds;
-        FD_ZERO(&read_fds);
-        FD_SET(client->sock, &read_fds);
-        
-        struct timeval timeout;
-        timeout.tv_sec = 1;
-        timeout.tv_usec = 0;
-        
-        int select_result = select(client->sock + 1, &read_fds, nullptr, nullptr, &timeout);
-        
-        if (select_result == 0) {
-            continue;
+void process_client_data(std::shared_ptr<WebSocketClient> client) {
+    if (!client->handshake_done) {
+        // Phase 1: 握手前 — 查找 HTTP 头部结束标记
+        size_t header_end = client->receive_buffer.find("\r\n\r\n");
+        if (header_end == std::string::npos) {
+            return;  // 头部不完整，等待更多数据
         }
         
-        if (select_result < 0) {
-            break;
-        }
+        std::string request(client->receive_buffer.begin(),
+                             client->receive_buffer.begin() + header_end);
+        client->receive_buffer.erase(0, header_end + 4);
         
-        int bytes_received = recv(client->sock, buffer, sizeof(buffer), 0);
+        std::string upgrade = parse_header(request, "Upgrade");
+        std::string connection = parse_header(request, "Connection");
         
-        if (bytes_received <= 0) {
-            break;
-        }
-        
-        receive_buffer.insert(receive_buffer.end(), buffer, buffer + bytes_received);
-        
-        if (!client->handshake_done) {
-            size_t header_end = receive_buffer.find("\r\n\r\n");
-            if (header_end != std::string::npos) {
-                std::string request(receive_buffer.begin(), receive_buffer.begin() + header_end);
-                receive_buffer.erase(receive_buffer.begin(), receive_buffer.begin() + header_end + 4);
-                
-                std::string upgrade = parse_header(request, "Upgrade");
-                std::string connection = parse_header(request, "Connection");
-                
-                if (upgrade == "websocket" && connection.find("Upgrade") != std::string::npos) {
-                    std::string key = parse_header(request, "Sec-WebSocket-Key");
-                    std::string accept_key = compute_accept_key(key);
-                    
-                    std::ostringstream oss;
-                    oss << "HTTP/1.1 101 Switching Protocols\r\n";
-                    oss << "Upgrade: websocket\r\n";
-                    oss << "Connection: Upgrade\r\n";
-                    oss << "Sec-WebSocket-Accept: " << accept_key << "\r\n";
-                    oss << "\r\n";
-                    
-                    send(client->sock, oss.str().c_str(), oss.str().size(), 0);
-                    client->handshake_done = true;
-                    
-                    printf("[WS] Handshake completed\n");
-                    fflush(stdout);
-                } else {
-                    std::string path;
-                    size_t get_pos = request.find("GET ");
-                    if (get_pos != std::string::npos) {
-                        size_t path_start = get_pos + 4;
-                        size_t path_end = request.find(" ", path_start);
-                        if (path_end != std::string::npos) {
-                            path = request.substr(path_start, path_end - path_start);
-                        }
-                    }
-                    
-                    printf("[HTTP] Request for: %s\n", path.c_str());
-                    fflush(stdout);
-                    
-                    if (path == "/" || path == "/index.html") {
-                        std::string html_content = read_file("client.html");
-                        if (html_content.empty()) {
-                            send_http_response(client->sock, "<html><body>client.html not found</body></html>", 404, "text/html");
-                        } else {
-                            send_http_response(client->sock, html_content, 200, "text/html");
-                        }
-                    } else {
-                        send_http_response(client->sock, "", 404, "text/plain");
-                    }
-                    
-                    client->connected = false;
-                    break;
-                }
-            }
+        if (upgrade == "websocket" && connection.find("Upgrade") != std::string::npos) {
+            // WebSocket 升级握手
+            std::string key = parse_header(request, "Sec-WebSocket-Key");
+            std::string accept_key = compute_accept_key(key);
+            
+            std::ostringstream oss;
+            oss << "HTTP/1.1 101 Switching Protocols\r\n";
+            oss << "Upgrade: websocket\r\n";
+            oss << "Connection: Upgrade\r\n";
+            oss << "Sec-WebSocket-Accept: " << accept_key << "\r\n";
+            oss << "\r\n";
+            
+            send(client->sock, oss.str().c_str(), oss.str().size(), 0);
+            client->handshake_done = true;
+            
+            printf("[WS] Handshake completed\n");
+            fflush(stdout);
         } else {
-            while (receive_buffer.size() >= 2) {
-                bool masked = (receive_buffer[1] & 0x80) != 0;
-                size_t payload_len = receive_buffer[1] & 0x7F;
-                
-                size_t frame_size = 2;
-                
-                if (payload_len == 126) {
-                    if (receive_buffer.size() < 4) break;
-                    payload_len = (static_cast<uint32_t>(receive_buffer[2]) << 8) | receive_buffer[3];
-                    frame_size = 4;
-                } else if (payload_len == 127) {
-                    if (receive_buffer.size() < 10) break;
-                    payload_len = 0;
-                    for (int i = 0; i < 8; i++) {
-                        payload_len = (payload_len << 8) | receive_buffer[2 + i];
-                    }
-                    frame_size = 10;
+            // 普通 HTTP 请求 — 返回 client.html
+            std::string path;
+            size_t get_pos = request.find("GET ");
+            if (get_pos != std::string::npos) {
+                size_t path_start = get_pos + 4;
+                size_t path_end = request.find(" ", path_start);
+                if (path_end != std::string::npos) {
+                    path = request.substr(path_start, path_end - path_start);
                 }
-                
-                if (masked) {
-                    frame_size += 4;
-                }
-                
-                frame_size += payload_len;
-                
-                if (receive_buffer.size() < frame_size) {
-                    break;
-                }
-                
-                std::vector<uint8_t> frame(receive_buffer.begin(), receive_buffer.begin() + frame_size);
-                receive_buffer.erase(receive_buffer.begin(), receive_buffer.begin() + frame_size);
-                
-                process_websocket_frame(client->sock, frame);
             }
+            
+            printf("[HTTP] Request for: %s\n", path.c_str());
+            fflush(stdout);
+            
+            if (path == "/" || path == "/index.html") {
+                std::string html_content = read_file("client.html");
+                if (html_content.empty()) {
+                    send_http_response(client->sock, "<html><body>client.html not found</body></html>", 404, "text/html");
+                } else {
+                    send_http_response(client->sock, html_content, 200, "text/html");
+                }
+            } else {
+                send_http_response(client->sock, "", 404, "text/plain");
+            }
+            
+            client->connected = false;  // HTTP 请求处理完毕，关闭连接
+        }
+    } else {
+        // Phase 2: 握手后 — 循环提取完整 WebSocket 帧
+        while (client->receive_buffer.size() >= 2) {
+            // 解析帧头，计算帧总大小
+            bool masked = (client->receive_buffer[1] & 0x80) != 0;
+            size_t payload_len = client->receive_buffer[1] & 0x7F;
+            
+            size_t frame_size = 2;
+            
+            if (payload_len == 126) {
+                if (client->receive_buffer.size() < 4) break;  // 数据不足，等待
+                payload_len = (static_cast<uint32_t>(client->receive_buffer[2]) << 8) | client->receive_buffer[3];
+                frame_size = 4;
+            } else if (payload_len == 127) {
+                if (client->receive_buffer.size() < 10) break;
+                payload_len = 0;
+                for (int i = 0; i < 8; i++) {
+                    payload_len = (payload_len << 8) | client->receive_buffer[2 + i];
+                }
+                frame_size = 10;
+            }
+            
+            if (masked) {
+                frame_size += 4;
+            }
+            
+            frame_size += payload_len;
+            
+            // 缓冲区数据不足一帧，等待更多数据
+            if (client->receive_buffer.size() < frame_size) {
+                break;
+            }
+            
+            // 提取完整帧并处理
+            std::vector<uint8_t> frame(client->receive_buffer.begin(),
+                                        client->receive_buffer.begin() + frame_size);
+            client->receive_buffer.erase(0, frame_size);
+            
+            process_websocket_frame(client->sock, frame);
         }
     }
-    
-    client->connected = false;
-    
-    std::lock_guard<std::mutex> lock(g_server_state.clients_mutex);
-    auto it = std::find(g_server_state.clients.begin(), g_server_state.clients.end(), client);
-    if (it != g_server_state.clients.end()) {
-        g_server_state.clients.erase(it);
-    }
-    
-    closesocket(client->sock);
-    printf("[WS] Client disconnected\n");
-    fflush(stdout);
 }
 
-/**
- * @brief 触发帧数据广播
- * 
- * 遍历所有已连接且完成握手的客户端，
- * 将最新帧数据以 WebSocket 二进制帧（opcode 0x02）形式发送。
- * 发送完毕后清除 new_frame 标志。
- */
-void trigger_writeable() {
-    std::lock_guard<std::mutex> lock(g_server_state.clients_mutex);
-    for (auto& client : g_server_state.clients) {
-        if (client->connected && client->handshake_done) {
-            std::lock_guard<std::mutex> fb_lock(g_server_state.framebuffer_mutex);
-            if (g_server_state.new_frame && !g_server_state.framebuffer.empty()) {
-                send_websocket_frame(client->sock, g_server_state.framebuffer.data(), 
-                                     g_server_state.framebuffer.size(), 0x02);
-            }
-        }
-    }
-    
-    std::lock_guard<std::mutex> fb_lock(g_server_state.framebuffer_mutex);
-    g_server_state.new_frame = false;
-}
+} // anonymous namespace
 
-}
+// ===========================================================================
+// WebSocketServer 类实现
+// ===========================================================================
 
 /**
  * @brief 构造函数，初始化服务器参数
@@ -777,7 +737,7 @@ void trigger_writeable() {
  */
 WebSocketServer::WebSocketServer(int port) 
     : port_(port), running_(false),
-      frame_width_(0), frame_height_(0), frame_pitch_(0), new_frame_(false) {
+      frame_width_(0), frame_height_(0), frame_pitch_(0), frame_version_(0) {
 }
 
 /**
@@ -790,45 +750,65 @@ WebSocketServer::~WebSocketServer() {
 /**
  * @brief 启动 WebSocket 服务器
  * 
- * 设置运行标志并创建服务器主线程（server_thread）。
- * 非阻塞调用，立即返回。
+ * 设置运行标志，创建 1 个 acceptor 线程和 POOL_SIZE 个 worker 线程。
+ * 非阻塞调用。
  */
 void WebSocketServer::start() {
     running_ = true;
-    g_server_state.running = true;
-    thread_ = std::thread(&WebSocketServer::server_thread, this);
+    frame_version_ = 0;
+    
+    // 创建 POOL_SIZE 个 worker 线程
+    workers_.reserve(POOL_SIZE);
+    for (int i = 0; i < POOL_SIZE; i++) {
+        workers_.emplace_back(&WebSocketServer::worker_thread, this, i);
+    }
+    
+    // 创建 acceptor 线程
+    acceptor_thread_ = std::thread(&WebSocketServer::acceptor_thread, this);
 }
 
 /**
  * @brief 停止 WebSocket 服务器
  * 
- * 1. 清除运行标志，使服务器线程和客户端线程的循环退出
- * 2. 关闭所有客户端连接（设置 connected=false 并关闭 socket）
- * 3. 等待服务器主线程结束（join）
+ * 1. 清除运行标志，使所有线程的循环退出
+ * 2. 唤醒所有等待中的 worker（notify_all）
+ * 3. 关闭所有客户端连接
+ * 4. 等待所有线程结束（join）
  * 
- * 必须在 SDL 事件循环退出后调用，以确保 SDL_PushEvent 不再被调用。
+ * 必须在 SDL 事件循环退出后调用，以确保 SDL_PushEvent 不再被使用。
  */
 void WebSocketServer::stop() {
     running_ = false;
-    g_server_state.running = false;
     
-    std::lock_guard<std::mutex> lock(g_server_state.clients_mutex);
-    for (auto& client : g_server_state.clients) {
-        client->connected = false;
-        closesocket(client->sock);
+    // 唤醒所有 worker 线程
+    for (int i = 0; i < POOL_SIZE; i++) {
+        std::lock_guard<std::mutex> lock(g_workers[i].mutex);
+        for (auto& c : g_workers[i].clients) {
+            c->connected = false;
+            closesocket(c->sock);
+        }
+        g_workers[i].clients.clear();
+        g_workers[i].cv.notify_all();
     }
-    g_server_state.clients.clear();
     
-    if (thread_.joinable()) {
-        thread_.join();
+    if (acceptor_thread_.joinable()) {
+        acceptor_thread_.join();
     }
+    
+    for (auto& w : workers_) {
+        if (w.joinable()) {
+            w.join();
+        }
+    }
+    workers_.clear();
 }
 
 /**
  * @brief 发送当前帧缓冲区到所有已连接客户端
  * 
- * 1. 将像素数据拷贝到全局帧缓冲区（加锁）
- * 2. 调用 trigger_writeable() 遍历所有客户端，以二进制帧广播
+ * 将像素数据封装到 shared_ptr 中（仅一次拷贝），递增 frame_version_。
+ * 各 worker 线程通过比较 frame_version_ 与本地 last_sent_version 判断是否有新帧，
+ * 若有则通过 shared_ptr 共享同一份帧数据（零拷贝）发送给客户端。
  * 
  * @param data 像素数据（ARGB8888 格式）
  * @param width 画面宽度（像素）
@@ -836,30 +816,33 @@ void WebSocketServer::stop() {
  * @param pitch 每行字节数
  */
 void WebSocketServer::send_framebuffer(const uint8_t* data, int width, int height, int pitch) {
-    {
-        std::lock_guard<std::mutex> lock(g_server_state.framebuffer_mutex);
-        g_server_state.framebuffer.resize(static_cast<size_t>(height) * static_cast<size_t>(pitch));
-        std::memcpy(g_server_state.framebuffer.data(), data, g_server_state.framebuffer.size());
-        g_server_state.frame_width = width;
-        g_server_state.frame_height = height;
-        g_server_state.frame_pitch = pitch;
-        g_server_state.new_frame = true;
-    }
+    auto new_fb = std::make_shared<std::vector<uint8_t>>(
+        static_cast<size_t>(height) * static_cast<size_t>(pitch));
+    std::memcpy(new_fb->data(), data, new_fb->size());
     
-    trigger_writeable();
+    {
+        std::lock_guard<std::mutex> lock(framebuffer_mutex_);
+        framebuffer_ = new_fb;
+        frame_width_ = width;
+        frame_height_ = height;
+        frame_pitch_ = pitch;
+    }
+    frame_version_.fetch_add(1, std::memory_order_release);
 }
 
 /**
- * @brief 服务器主线程
+ * @brief acceptor 线程
  * 
  * 初始化 Winsock，创建监听 socket，进入 accept 循环：
  * 1. WSAStartup 初始化 Winsock 库
  * 2. 创建 socket 并绑定到所有网卡的指定端口
- * 3. listen 开始监听，最多 5 个等待连接
- * 4. 使用 select() 超时机制（1秒）等待新连接
- * 5. 接受新连接后创建对应的 WebSocketClient 和客户端线程
+ * 3. listen 开始监听
+ * 4. select() 超时等待新连接（1秒，便于检查 running_）
+ * 5. accept() 新连接后创建 WebSocketClient，
+ *    轮询分配给 worker[next_worker % POOL_SIZE]
+ * 6. notify 该 worker 有新客户端
  */
-void WebSocketServer::server_thread() {
+void WebSocketServer::acceptor_thread() {
     WSADATA wsaData;
     if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0) {
         fprintf(stderr, "[WS] WSAStartup failed\n");
@@ -900,6 +883,7 @@ void WebSocketServer::server_thread() {
     fflush(stdout);
     
     while (running_) {
+        // 使用 select 超时等待新连接，便于定期检查 running_
         fd_set read_fds;
         FD_ZERO(&read_fds);
         FD_SET(server_socket, &read_fds);
@@ -911,7 +895,7 @@ void WebSocketServer::server_thread() {
         int select_result = select(server_socket + 1, &read_fds, nullptr, nullptr, &timeout);
         
         if (select_result == 0) {
-            continue;
+            continue;  // 超时，检查 running_ 后继续
         }
         
         if (select_result < 0) {
@@ -922,7 +906,8 @@ void WebSocketServer::server_thread() {
             sockaddr_in client_addr;
             int client_addr_len = sizeof(client_addr);
             
-            SOCKET client_socket = accept(server_socket, reinterpret_cast<sockaddr*>(&client_addr), 
+            SOCKET client_socket = accept(server_socket,
+                                          reinterpret_cast<sockaddr*>(&client_addr),
                                           reinterpret_cast<int*>(&client_addr_len));
             
             if (client_socket == INVALID_SOCKET) {
@@ -934,14 +919,161 @@ void WebSocketServer::server_thread() {
             
             auto client = std::make_shared<WebSocketClient>(client_socket);
             
-            std::lock_guard<std::mutex> lock(g_server_state.clients_mutex);
-            g_server_state.clients.push_back(client);
+            // 轮询分配给 worker
+            int worker_id = g_next_worker.fetch_add(1) % POOL_SIZE;
             
-            std::thread t(client_thread, client);
-            t.detach();
+            {
+                std::lock_guard<std::mutex> lock(g_workers[worker_id].mutex);
+                g_workers[worker_id].clients.push_back(client);
+            }
+            g_workers[worker_id].cv.notify_one();
+            
+            printf("[WS] Assigned to worker[%d]\n", worker_id);
+            fflush(stdout);
         }
     }
     
     closesocket(server_socket);
     WSACleanup();
+}
+
+/**
+ * @brief worker 线程（线程池中的工作线程）
+ * 
+ * 每个 worker 使用 select() 多路复用监听分配给自己的客户端 socket：
+ * 
+ * 循环流程：
+ * 1. 检查帧版本号，若有新帧则广播（shared_ptr 零拷贝）
+ * 2. 等待条件变量（有新客户端或超时 15ms）
+ * 3. 拷贝客户端列表（加锁后快速释放）
+ * 4. 构建 fd_set，select() 等待可读事件（15ms 超时）
+ * 5. 对每个可读的客户端：
+ *    a. recv 读取数据，追加到 receive_buffer
+ *    b. 调用 process_client_data 处理握手或帧解析
+ * 6. 移除断开连接的客户端
+ * 
+ * select 超时设为 15ms（~67 FPS），确保低延迟帧发送。
+ * 每个 worker 独立追踪 last_sent_version，互不干扰，避免竞态丢帧。
+ * 
+ * @param worker_id worker 编号（0 ~ POOL_SIZE-1）
+ */
+void WebSocketServer::worker_thread(int worker_id) {
+    auto& wd = g_workers[worker_id];
+    uint64_t last_sent_version = 0;  ///< 本 worker 上次发送的帧版本号
+    
+    printf("[Worker %d] Started\n", worker_id);
+    fflush(stdout);
+    
+    while (running_) {
+        // 1. 先检查是否有新帧需要广播（在 select 前发送，降低延迟）
+        uint64_t current_version = frame_version_.load(std::memory_order_acquire);
+        if (current_version > last_sent_version) {
+            std::shared_ptr<const std::vector<uint8_t>> fb;
+            {
+                std::lock_guard<std::mutex> fb_lock(framebuffer_mutex_);
+                fb = framebuffer_;  // shared_ptr 拷贝（8字节），数据零拷贝
+            }
+            if (fb && !fb->empty()) {
+                // 拷贝客户端列表（避免在发送时持锁）
+                std::vector<std::shared_ptr<WebSocketClient>> clients_copy;
+                {
+                    std::lock_guard<std::mutex> lock(wd.mutex);
+                    clients_copy = wd.clients;
+                }
+                for (auto& c : clients_copy) {
+                    if (c->connected && c->handshake_done) {
+                        send_websocket_frame(c->sock, fb->data(), fb->size(), 0x02);
+                    }
+                }
+            }
+            last_sent_version = current_version;
+        }
+        
+        // 2. 等待有客户端或超时（15ms，保证高帧率）
+        std::vector<std::shared_ptr<WebSocketClient>> my_clients;
+        {
+            std::unique_lock<std::mutex> lock(wd.mutex);
+            wd.cv.wait_for(lock, std::chrono::milliseconds(15), [&] {
+                return !running_ || !wd.clients.empty();
+            });
+            if (!running_) break;
+            my_clients = wd.clients;
+        }
+        
+        if (my_clients.empty()) {
+            continue;
+        }
+        
+        // 3. 构建 fd_set 进行 select 多路复用
+        fd_set read_fds;
+        FD_ZERO(&read_fds);
+        SOCKET max_fd = 0;
+        int active_count = 0;
+        
+        for (auto& c : my_clients) {
+            if (c->connected) {
+                FD_SET(c->sock, &read_fds);
+                if (c->sock > max_fd) max_fd = c->sock;
+                active_count++;
+            }
+        }
+        
+        if (active_count == 0) {
+            continue;
+        }
+        
+        // 4. select 超时 15ms，保证高频检查新帧
+        struct timeval timeout;
+        timeout.tv_sec = 0;
+        timeout.tv_usec = 15000;  // 15ms
+        
+        int select_result = select(max_fd + 1, &read_fds, nullptr, nullptr, &timeout);
+        
+        if (select_result <= 0) {
+            continue;  // 超时或被信号中断，回到循环开头检查新帧
+        }
+        
+        // 5. 处理可读的客户端 socket
+        std::vector<std::shared_ptr<WebSocketClient>> to_remove;
+        
+        for (auto& c : my_clients) {
+            if (c->connected && FD_ISSET(c->sock, &read_fds)) {
+                char buffer[4096];
+                int bytes_received = recv(c->sock, buffer, sizeof(buffer), 0);
+                
+                if (bytes_received <= 0) {
+                    // 连接关闭或出错
+                    c->connected = false;
+                    to_remove.push_back(c);
+                    printf("[WS] Client disconnected (worker %d)\n", worker_id);
+                    fflush(stdout);
+                    continue;
+                }
+                
+                // 追加数据到接收缓冲区并处理
+                c->receive_buffer.append(buffer, bytes_received);
+                process_client_data(c);
+                
+                // HTTP 请求处理完毕后 connected 被设为 false
+                if (!c->connected) {
+                    to_remove.push_back(c);
+                }
+            }
+        }
+        
+        // 6. 从 worker 列表中移除断开的客户端
+        if (!to_remove.empty()) {
+            std::lock_guard<std::mutex> lock(wd.mutex);
+            for (auto& c : to_remove) {
+                auto it = std::find(wd.clients.begin(), wd.clients.end(), c);
+                if (it != wd.clients.end()) {
+                    closesocket(c->sock);
+                    wd.clients.erase(it);
+                }
+            }
+        }
+    }
+    
+    printf("[Worker %d] Stopped\n", worker_id);
+    fflush(stdout);
 }
