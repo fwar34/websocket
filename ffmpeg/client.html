@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<!--
+  @file client.html
+  @brief WebSocket FFmpeg 视频播放器前端页面
+
+  功能：
+  1. 通过 WebSocket 连接 C++ 服务器，接收 ARGB8888 帧数据并渲染到 Canvas
+  2. 接收服务器发送的 init 消息，动态设置 Canvas 尺寸
+  3. 捕获浏览器键盘和鼠标事件，以 JSON 格式发送给服务器
+
+  通信协议：
+  - 接收文本帧：{"type":"init","width":W,"height":H} — 设置 Canvas 尺寸
+  - 接收二进制帧：ARGB8888 像素数据（BGRA 内存布局）
+  - 发送文本帧：JSON 格式的输入事件
+    键盘：{"type":"keydown","keycode":87}
+    鼠标：{"type":"mousemove","x":100,"y":200}
+    按键：{"type":"mousedown","x":100,"y":200,"button":0}
+-->
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>FFmpeg WebSocket Streamer</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        canvas {
+            border: 1px solid #333;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        // 视频宽高，由服务器 init 消息设置
+        let videoWidth = 640;
+        let videoHeight = 480;
+        canvas.width = videoWidth;
+        canvas.height = videoHeight;
+
+        const ws = new WebSocket('ws://' + window.location.host);
+        ws.binaryType = 'arraybuffer';
+
+        ws.onopen = function() {
+            console.log('Connected to server');
+        };
+
+        ws.onmessage = function(event) {
+            if (typeof event.data === 'string') {
+                // 文本帧：解析 JSON 消息
+                try {
+                    const msg = JSON.parse(event.data);
+                    if (msg.type === 'init') {
+                        videoWidth = msg.width;
+                        videoHeight = msg.height;
+                        canvas.width = videoWidth;
+                        canvas.height = videoHeight;
+                        console.log('Video size: ' + videoWidth + 'x' + videoHeight);
+                    }
+                } catch (e) {
+                    // 忽略非 JSON 文本
+                }
+                return;
+            }
+
+            if (event.data instanceof ArrayBuffer) {
+                const buffer = new Uint8Array(event.data);
+                const imageData = ctx.createImageData(videoWidth, videoHeight);
+
+                // BGRA (FFmpeg AV_PIX_FMT_BGRA) → RGBA (Canvas ImageData)
+                // 内存布局：B,G,R,A → 交换 B 和 R
+                for (let i = 0; i < buffer.length; i += 4) {
+                    imageData.data[i]     = buffer[i + 2]; // R ← B
+                    imageData.data[i + 1] = buffer[i + 1]; // G ← G
+                    imageData.data[i + 2] = buffer[i];     // B ← R
+                    imageData.data[i + 3] = 255;            // A = 255 (不透明)
+                }
+
+                ctx.putImageData(imageData, 0, 0);
+            }
+        };
+
+        ws.onclose = function() {
+            console.log('Disconnected from server');
+        };
+
+        function sendEvent(event) {
+            if (ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify(event));
+            }
+        }
+
+        canvas.addEventListener('mousemove', function(e) {
+            const rect = canvas.getBoundingClientRect();
+            sendEvent({
+                type: 'mousemove',
+                x: Math.round((e.clientX - rect.left) * videoWidth / rect.width),
+                y: Math.round((e.clientY - rect.top) * videoHeight / rect.height)
+            });
+        });
+
+        canvas.addEventListener('mousedown', function(e) {
+            const rect = canvas.getBoundingClientRect();
+            sendEvent({
+                type: 'mousedown',
+                x: Math.round((e.clientX - rect.left) * videoWidth / rect.width),
+                y: Math.round((e.clientY - rect.top) * videoHeight / rect.height),
+                button: e.button
+            });
+        });
+
+        canvas.addEventListener('mouseup', function(e) {
+            const rect = canvas.getBoundingClientRect();
+            sendEvent({
+                type: 'mouseup',
+                x: Math.round((e.clientX - rect.left) * videoWidth / rect.width),
+                y: Math.round((e.clientY - rect.top) * videoHeight / rect.height),
+                button: e.button
+            });
+        });
+
+        document.addEventListener('keydown', function(e) {
+            sendEvent({ type: 'keydown', keycode: e.keyCode });
+        });
+
+        document.addEventListener('keyup', function(e) {
+            sendEvent({ type: 'keyup', keycode: e.keyCode });
+        });
+    </script>
+</body>
+</html>

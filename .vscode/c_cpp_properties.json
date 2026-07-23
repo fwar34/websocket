@@ -1,18 +1,23 @@
-{
-    "configurations": [
-        {
-            "name": "MinGW",
-            "includePath": [
-                "${workspaceFolder}/**",
-                "I:/msys64/ucrt64/include",
-                "I:/msys64/ucrt64/include/SDL2"
-            ],
-            "compilerPath": "I:/msys64/ucrt64/bin/g++.exe",
-            "cStandard": "c11",
-            "cppStandard": "c++17",
-            "intelliSenseMode": "windows-gcc-x64",
-            "compileCommands": "${workspaceFolder}/build/compile_commands.json"
-        }
-    ],
-    "version": 4
+﻿{
+    "configurations":  [
+                           {
+                               "name":  "MinGW",
+                               "includePath":  [
+                                                   "${workspaceFolder}/**",
+                                                   "I:/msys64/ucrt64/include",
+                                                   "I:/msys64/ucrt64/include/SDL2",
+                                                   "I:/msys64/ucrt64/include/libavcodec",
+                                                   "I:/msys64/ucrt64/include/libavformat",
+                                                   "I:/msys64/ucrt64/include/libavutil",
+                                                   "I:/msys64/ucrt64/include/libswscale",
+                                                   "I:/msys64/ucrt64/include/libswresample"
+                                               ],
+                               "compilerPath":  "I:/msys64/ucrt64/bin/g++.exe",
+                               "cStandard":  "c11",
+                               "cppStandard":  "c++17",
+                               "intelliSenseMode":  "windows-gcc-x64",
+                               "compileCommands":  "${workspaceFolder}/build/compile_commands.json"
+                           }
+                       ],
+    "version":  4
 }

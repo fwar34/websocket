@@ -1,33 +1,77 @@
-{
-    "version": "0.2.0",
-    "configurations": [
-        {
-            "name": "Debug sdl-rect",
-            "type": "cppdbg",
-            "request": "launch",
-            "program": "${workspaceFolder}/build/sdl-rect/sdl-rect.exe",
-            "args": [],
-            "stopAtEntry": false,
-            "cwd": "${workspaceFolder}/build/sdl-rect",
-            "environment": [],
-            "externalConsole": true,
-            "preLaunchTask": "build debug",
-            "MIMode": "gdb",
-            "miDebuggerPath": "gdb.exe"
-        },
-        {
-            "name": "Debug sdl-video",
-            "type": "cppdbg",
-            "request": "launch",
-            "program": "${workspaceFolder}/build/sdl-video/sdl-video.exe",
-            "args": [],
-            "stopAtEntry": false,
-            "cwd": "${workspaceFolder}/build/sdl-video",
-            "environment": [],
-            "externalConsole": true,
-            "preLaunchTask": "build debug",
-            "MIMode": "gdb",
-            "miDebuggerPath": "gdb.exe"
-        }
-    ]
+﻿{
+    "version":  "0.2.0",
+    "configurations":  [
+                           {
+                               "name":  "Debug sdl-rect",
+                               "type":  "cppdbg",
+                               "request":  "launch",
+                               "program":  "${workspaceFolder}/build/sdl-rect/sdl-rect.exe",
+                               "args":  [
+
+                                        ],
+                               "stopAtEntry":  false,
+                               "cwd":  "${workspaceFolder}/build/sdl-rect",
+                               "environment":  [
+
+                                               ],
+                               "externalConsole":  true,
+                               "preLaunchTask":  "build debug",
+                               "MIMode":  "gdb",
+                               "miDebuggerPath":  "gdb.exe"
+                           },
+                           {
+                               "name":  "Debug sdl-video",
+                               "type":  "cppdbg",
+                               "request":  "launch",
+                               "program":  "${workspaceFolder}/build/sdl-video/sdl-video.exe",
+                               "args":  [
+
+                                        ],
+                               "stopAtEntry":  false,
+                               "cwd":  "${workspaceFolder}/build/sdl-video",
+                               "environment":  [
+
+                                               ],
+                               "externalConsole":  true,
+                               "preLaunchTask":  "build debug",
+                               "MIMode":  "gdb",
+                               "miDebuggerPath":  "gdb.exe"
+                           },
+                           {
+                               "args":  [
+
+                                        ],
+                               "miDebuggerPath":  "gdb.exe",
+                               "type":  "cppdbg",
+                               "cwd":  "${workspaceFolder}/build/rtsp",
+                               "externalConsole":  true,
+                               "environment":  [
+
+                                               ],
+                               "name":  "Debug rtsp",
+                               "MIMode":  "gdb",
+                               "stopAtEntry":  false,
+                               "preLaunchTask":  "build debug",
+                               "program":  "${workspaceFolder}/build/rtsp/rtsp_server.exe",
+                               "request":  "launch"
+                           },
+                           {
+                               "args":  [
+
+                                        ],
+                               "miDebuggerPath":  "gdb.exe",
+                               "type":  "cppdbg",
+                               "cwd":  "${workspaceFolder}/build/ffmpeg",
+                               "externalConsole":  true,
+                               "environment":  [
+
+                                               ],
+                               "name":  "Debug ffmpeg",
+                               "MIMode":  "gdb",
+                               "stopAtEntry":  false,
+                               "preLaunchTask":  "build debug",
+                               "program":  "${workspaceFolder}/build/ffmpeg/ffmpeg_server.exe",
+                               "request":  "launch"
+                           }
+                       ]
 }

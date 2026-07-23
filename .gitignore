@@ -2,6 +2,8 @@
 build/
 sdl-rect/build/
 sdl-video/build/
+rtsp/build/
+ffmpeg/build/
 
 # Compiled executables
 *.exe
@@ -19,3 +21,14 @@ compile_commands.json
 
 # IDE specific
 .trae/
+
+# Python intermediate files
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.eggs/
+
+# Python generated output files
+*.log
+ffmpeg_log.txt

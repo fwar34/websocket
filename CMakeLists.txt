@@ -12,15 +12,25 @@
 #   │   ├── main.cpp
 #   │   ├── websocket_server.cpp / .h
 #   │   └── client.html
-#   └── sdl-video/              ← 示例2：SDL 视频渲染（结构同上）
+#   ├── sdl-video/              ← 示例2：SDL 视频渲染（结构同上）
+#   ├── rtsp/                   ← RTSP MJPEG 服务器
+#   │   ├── CMakeLists.txt
+#   │   ├── main.cpp
+#   │   ├── rtsp_server.cpp / .h
+#   │   └── video_source.cpp / .h
+#   └── ffmpeg/                 ← FFmpeg 视频解码 + WebSocket 推流
+#       ├── CMakeLists.txt
+#       ├── main.cpp
+#       ├── websocket_server.cpp / .h
+#       └── client.html
 #
 # 构建方式：
 #   cmake -S . -B build -G "MinGW Makefiles"
 #   cmake --build build
 #
 # 依赖：
-#   - SDL2（通过 find_package 查找）
-#   - ws2_32（Windows 套接字库）
+#   - SDL2（通过 find_package 查找，仅 sdl-rect/sdl-video 需要）
+#   - ws2_32（Windows 套接字库，全部子项目需要）
 #===============================================================================
 
 cmake_minimum_required(VERSION 3.10)
@@ -34,6 +44,8 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 find_package(SDL2 REQUIRED)
 
-# 两个子项目
+# 四个子项目
 add_subdirectory(sdl-rect)
 add_subdirectory(sdl-video)
+add_subdirectory(rtsp)
+add_subdirectory(ffmpeg)
